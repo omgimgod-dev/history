@@ -3,21 +3,24 @@
 {% block content %}
 <div class="place-page">
     
-
-    <!-- Блок с изображениями полностью сохранён как в оригинале -->
+    <!-- Блок с изображениями -->
     <div class="place-images login">
         {% if place.image_pairs %}
             {% set first_pair = place.image_pairs[0] %}
 
-            <div class="twentytwenty-container main-image">
-                <img src="{{ first_pair.modern_path }}" alt="Сегодня" style="height: 500px; width: 400px; object-fit: cover;">
-                <img src="{{ first_pair.past_path }}" alt="Прошлое" style="height: 500px; width: 400px; object-fit: cover;">
+            <div class="twentytwenty-container main-image" data-orientation="horizontal">
+                <img src="{{ first_pair.modern_path }}" alt="Сегодня">
+                <img src="{{ first_pair.past_path }}" alt="Прошлое">
             </div>
 
             {% if place.image_pairs|length > 1 %}
-            <div class="thumbnails">
+            <div class="thumbnails" style="margin-top: 20px; display: flex; gap: 10px;">
                 {% for pair in place.image_pairs %}
-                    <img src="{{ pair.modern_path }}" alt="Thumb" style="width: 100px; height: auto; cursor: pointer;" onclick="updateMainImage('{{ pair.modern_path }}', '{{ pair.past_path }}')">
+                    <img src="{{ pair.modern_path }}" alt="Thumb" 
+                         style="width: 100px; height: 70px; object-fit: cover; cursor: pointer; border: 2px solid transparent;"
+                         onmouseover="this.style.borderColor='#007bff'"
+                         onmouseout="this.style.borderColor='transparent'"
+                         onclick="updateMainImage('{{ pair.modern_path }}', '{{ pair.past_path }}')">
                 {% endfor %}
             </div>
             {% endif %}
@@ -25,54 +28,106 @@
             <p>Изображения отсутствуют.</p>
         {% endif %}
     </div>
+    
     <h1>{{ place.name }}</h1>
 
     <div class="place-description">
         {{ place.description }}
     </div>
 
-    <a href="/" class="btn btn-secondary" style="padding-top: 10px; ;">Назад на главную</a>
+    <a href="/" class="btn btn-secondary" style="margin-top: 20px; display: inline-block;">Назад на главную</a>
 </div>
 
+<style>
+    .place-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .twentytwenty-container {
+        max-width: 800px;
+        margin: 0 auto;
+        cursor: pointer;
+    }
+    .twentytwenty-container img {
+        width: 100%;
+        height: auto;
+        max-height: 500px;
+        object-fit: cover;
+    }
+    .place-description {
+        margin: 20px 0;
+        line-height: 1.6;
+    }
+</style>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="/static/js/jquery.event.move.js"></script>
+<script src="/static/js/jquery.twentytwenty.js"></script>
+<link rel="stylesheet" href="/static/css/twentytwenty.css">
 
 <script>
 // Функция для обновления обоих изображений в TwentyTwenty контейнере
 function updateMainImage(modernSrc, pastSrc) {
     const container = document.querySelector('.twentytwenty-container');
-    if (!container) return;
+    if (!container) {
+        console.error('Container not found');
+        return;
+    }
 
     const images = container.getElementsByTagName('img');
-    if (images.length < 2) return;
+    if (images.length < 2) {
+        console.error('Not enough images found');
+        return;
+    }
+
+    // Сохраняем текущий offset, если нужно
+    let currentOffset = 0.5;
+    if (container.twentytwenty && container.twentytwenty.getData) {
+        currentOffset = container.twentytwenty.getData('offset');
+    }
 
     // Обновляем источники изображений
-    images[0].src = modernSrc;  // левое (modern)
-    images[1].src = pastSrc;    // правое (past)
+    images[0].src = modernSrc;
+    images[1].src = pastSrc;
 
-    // Если используется jQuery-плагин TwentyTwenty, переинициализируем его
-    if (typeof $ !== 'undefined' && $.fn.twentytwenty) {
-        // Уничтожаем старую инициализацию
-        $(container).trigger('destroy.twentytwenty');
-        // Ждём загрузки новых изображений перед инициализацией (опционально)
-        Promise.all([
-            new Promise(resolve => images[0].onload = resolve),
-            new Promise(resolve => images[1].onload = resolve)
-        ]).then(() => {
-            $(container).twentytwenty({ default_offset_pct: 0.5 });
-        });
-    }
+    // Ждём загрузки изображений и переинициализируем
+    Promise.all([
+        new Promise(resolve => { images[0].onload = resolve; images[0].onerror = resolve; }),
+        new Promise(resolve => { images[1].onload = resolve; images[1].onerror = resolve; })
+    ]).then(() => {
+        if (typeof $ !== 'undefined' && $.fn.twentytwenty) {
+            // Уничтожаем старую инициализацию
+            $(container).trigger('destroy.twentytwenty');
+            // Инициализируем заново
+            $(container).twentytwenty({ 
+                default_offset_pct: currentOffset,
+                orientation: 'horizontal'
+            });
+        }
+    });
 }
 
-
-// Дополнительная инициализация на случай, если изображения загружаются динамически
+// Инициализация TwentyTwenty после полной загрузки страницы
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof $ !== 'undefined' && $.fn.twentytwenty) {
-        $(".twentytwenty-container").twentytwenty({default_offset_pct: 0.5});
+    // Ждем, пока jQuery и плагин загрузятся
+    function initTwentyTwenty() {
+        if (typeof $ !== 'undefined' && $.fn.twentytwenty && $('.twentytwenty-container').length) {
+            $(".twentytwenty-container").twentytwenty({
+                default_offset_pct: 0.5,
+                orientation: 'horizontal'
+            });
+        } else {
+            // Если еще не загрузились, ждем
+            setTimeout(initTwentyTwenty, 100);
+        }
     }
+    
+    initTwentyTwenty();
 });
+
+// Дополнительная инициализация для случая, если изображения загружаются через updateMainImage
+window.updateMainImage = updateMainImage;
 </script>
 
-
 {% endblock %}
-
-
