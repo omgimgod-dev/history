@@ -4,8 +4,8 @@ from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPExc
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import User, Place, ImagePair,Review
+from .database import get_db
+from .models import User, Place, ImagePair,Review
 import time
 
 router = APIRouter(prefix="/admin", tags=["admin"])
