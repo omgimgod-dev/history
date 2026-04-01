@@ -6,7 +6,7 @@ from ..database import get_db
 from ..models import Place, Review, User
 from ..templates_config import env
 
-router = APIRouter(tags=["places"])
+router = APIRouter(prefix="/places", tags=["places"])
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
