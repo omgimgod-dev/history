@@ -45,29 +45,52 @@ os.makedirs("app/static/uploads", exist_ok=True)
 # Настройка хеширования паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# ========== ВРЕМЕННЫЙ ЭНДПОИНТ ДЛЯ ФИКСА ПАРОЛЕЙ ==========
+@app.get("/fix-passwords")
+def fix_passwords():
+    """Временный эндпоинт для хеширования паролей"""
+    db = SessionLocal()
+    try:
+        users = db.query(models.User).all()
+        fixed_count = 0
+        
+        for user in users:
+            # Если пароль не начинается с $2b$ (признак bcrypt хеша)
+            if not user.password.startswith('$2b$'):
+                print(f"Fixing password for user: {user.username}")
+                user.password = pwd_context.hash(user.password)
+                fixed_count += 1
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "fixed": fixed_count,
+            "total_users": len(users),
+            "message": f"Fixed {fixed_count} passwords"
+        }
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "error": str(e)}
+    finally:
+        db.close()
+# =========================================================
+
 # Инициализация админа и пользователя при пустой БД
 @app.on_event("startup")
 def startup():
     db = SessionLocal()
     try:
-        # Проверяем, есть ли пользователи
         if db.query(models.User).count() == 0:
             print("Creating admin and user...")
-            
-            # Хешируем пароли
-            admin_password_hash = pwd_context.hash("admin123")
-            user_password_hash = pwd_context.hash("user123")
-            
-            # Создаем админа с хешированным паролем
             admin = models.User(
                 username="admin",
-                password=admin_password_hash,  # ← хешированный пароль!
+                password=pwd_context.hash("admin123"),
                 is_admin=True
             )
-            # Создаем обычного пользователя
             user = models.User(
                 username="user",
-                password=user_password_hash,  # ← хешированный пароль!
+                password=pwd_context.hash("user123"),
                 is_admin=False
             )
             db.add_all([admin, user])
@@ -76,16 +99,8 @@ def startup():
             print("   Admin login: admin / admin123")
             print("   User login: user / user123")
         else:
-            print("✅ Users already exist in database")
-            
-            # Для отладки: проверим, хешированы ли пароли
-            admin_user = db.query(models.User).filter(models.User.username == "admin").first()
-            if admin_user:
-                print(f"Admin password preview: {admin_user.password[:20]}...")
-            
+            print("✅ Users already exist")
     except Exception as e:
         print(f"❌ Error creating users: {e}")
-        import traceback
-        traceback.print_exc()
     finally:
         db.close()
