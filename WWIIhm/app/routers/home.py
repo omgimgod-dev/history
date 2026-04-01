@@ -1,14 +1,12 @@
 import os
 from fastapi import APIRouter, Request, Depends
-
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Place, User
-from ..templates_config import template_engine
-
+from ..templates_config import env  # ← импортируем окружение
 
 router = APIRouter(tags=["home"])
-
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
@@ -16,7 +14,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         return db.query(User).filter(User.id == user_id).first()
     return None
 
-@router.get("/", response_class=template_engine.TemplateResponse)
+@router.get("/", response_class=HTMLResponse)
 async def home(request: Request, db: Session = Depends(get_db)):
     places = db.query(Place).all()
     user = get_current_user(request, db)
@@ -30,14 +28,19 @@ async def home(request: Request, db: Session = Depends(get_db)):
         elif raw_image:
             main_map_image = str(raw_image)
     
-    return template_engine.TemplateResponse("index.html", {
-        "request": request,
-        "places": places,
-        "user": user,
-        "main_map_image": main_map_image
-    })
+    # Рендерим шаблон вручную
+    template = env.get_template("index.html")
+    content = template.render(
+        request=request,
+        places=places,
+        user=user,
+        main_map_image=main_map_image
+    )
+    return HTMLResponse(content=content)
 
-@router.get("/about", response_class=template_engine.TemplateResponse)
+@router.get("/about", response_class=HTMLResponse)
 async def about(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
-    return templates.TemplateResponse("about.html", {"request": request, "user": user})
+    template = env.get_template("about.html")
+    content = template.render(request=request, user=user)
+    return HTMLResponse(content=content)
