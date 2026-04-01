@@ -10,8 +10,6 @@ from passlib.context import CryptContext
 
 # Определяем базовую директорию (WWIIhm/app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Определяем корневую директорию проекта (WWIIhm)
-ROOT_DIR = os.path.dirname(BASE_DIR)
 
 # Создаем таблицы
 models.Base.metadata.create_all(bind=engine)
@@ -22,33 +20,18 @@ app = FastAPI()
 # Добавляем middleware для сессий
 app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
 
-# Подключаем статические файлы
+# Подключаем статические файлы (путь к папке static внутри WWIIhm/app)
 static_dir = os.path.join(BASE_DIR, "static")
-print(f"Static directory: {static_dir}")
-print(f"Static directory exists: {os.path.exists(static_dir)}")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Создаем папки для загрузок (используем абсолютные пути)
-uploads_dir = os.path.join(BASE_DIR, "static", "uploads")
+# Создаем папки для загрузок
+uploads_dir = os.path.join(static_dir, "uploads")
 places_dir = os.path.join(uploads_dir, "places")
 avatars_dir = os.path.join(uploads_dir, "avatars")
 
 os.makedirs(uploads_dir, exist_ok=True)
 os.makedirs(places_dir, exist_ok=True)
 os.makedirs(avatars_dir, exist_ok=True)
-
-static_dir = os.path.join(BASE_DIR, "static")
-print(f"STATIC FILES DIRECTORY: {static_dir}")
-print(f"Static directory exists: {os.path.exists(static_dir)}")
-print(f"Uploads directory: {os.path.join(static_dir, 'uploads')}")
-print(f"Uploads exists: {os.path.exists(os.path.join(static_dir, 'uploads'))}")
-
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
-
-print(f"Uploads directory: {uploads_dir}")
-print(f"Places directory: {places_dir}")
-print(f"Avatars directory: {avatars_dir}")
 
 # Подключаем роутеры
 app.include_router(auth.router)
@@ -69,27 +52,22 @@ async def db_session_middleware(request: Request, call_next):
 # Настройка хеширования паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# ========== ВРЕМЕННЫЙ ЭНДПОИНТ ДЛЯ ФИКСА ПАРОЛЕЙ ==========
+# ВРЕМЕННЫЙ ЭНДПОИНТ ДЛЯ СБРОСА ПАРОЛЕЙ
 @app.get("/reset-all")
 def reset_all_passwords():
-    """Простой сброс всех паролей без bcrypt"""
     import hashlib
     db = SessionLocal()
     try:
-        # Удаляем всех пользователей
         db.query(models.User).delete()
         
-        # Используем простой sha256 для временного решения
         def simple_hash(password):
             return hashlib.sha256(password.encode()).hexdigest()
         
-        # Создаем админа
         admin = models.User(
             username="admin",
             password=simple_hash("admin123"),
             is_admin=True
         )
-        # Создаем обычного пользователя
         user = models.User(
             username="user",
             password=simple_hash("user123"),
@@ -111,7 +89,7 @@ def reset_all_passwords():
     finally:
         db.close()
 
-# Инициализация админа и пользователя при пустой БД
+# Инициализация админа и пользователя
 @app.on_event("startup")
 def startup():
     db = SessionLocal()
@@ -131,11 +109,9 @@ def startup():
             db.add_all([admin, user])
             db.commit()
             print("✅ Admin and user created successfully!")
-            print("   Admin login: admin / admin123")
-            print("   User login: user / user123")
         else:
             print("✅ Users already exist")
     except Exception as e:
-        print(f"❌ Error creating users: {e}")
+        print(f"❌ Error: {e}")
     finally:
         db.close()
