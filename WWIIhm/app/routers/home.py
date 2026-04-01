@@ -4,11 +4,11 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Place, User
+from .templates_config import TEMPLATES_DIR
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
-router = APIRouter(tags=["home"])
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
+router = APIRouter(tags=["home"])
+
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
