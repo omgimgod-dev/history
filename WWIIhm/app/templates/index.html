@@ -287,16 +287,7 @@
 
 <script src="/static/js/map.js"></script>
 <script>
-    const places = [
-        {% for place in places %}
-        {
-            id: {{ place.id }},
-            name: "{{ place.name }}",
-            x: {{ place.coord_x }},
-            y: {{ place.coord_y }}
-        },
-        {% endfor %}
-    ];
+    const places = {{ places | tojson }};
     initMap(places);
 </script>
 {% endblock %}
