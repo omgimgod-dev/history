@@ -23,6 +23,11 @@ app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
 # Подключаем статические файлы
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
+# Создаем папку uploads и все подпапки
+os.makedirs("app/static/uploads", exist_ok=True)
+os.makedirs("app/static/uploads/places", exist_ok=True)
+os.makedirs("app/static/uploads/avatars", exist_ok=True)
+
 # Подключаем роутеры
 app.include_router(auth.router)
 app.include_router(places.router)
