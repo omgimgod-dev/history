@@ -37,6 +37,15 @@ os.makedirs(uploads_dir, exist_ok=True)
 os.makedirs(places_dir, exist_ok=True)
 os.makedirs(avatars_dir, exist_ok=True)
 
+static_dir = os.path.join(BASE_DIR, "static")
+print(f"STATIC FILES DIRECTORY: {static_dir}")
+print(f"Static directory exists: {os.path.exists(static_dir)}")
+print(f"Uploads directory: {os.path.join(static_dir, 'uploads')}")
+print(f"Uploads exists: {os.path.exists(os.path.join(static_dir, 'uploads'))}")
+
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
 print(f"Uploads directory: {uploads_dir}")
 print(f"Places directory: {places_dir}")
 print(f"Avatars directory: {avatars_dir}")
