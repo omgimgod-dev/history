@@ -151,6 +151,22 @@ async def add_image_pair(
     print(f"DEBUG: Image pair saved to DB")
     return RedirectResponse(url=f"/admin/edit_place/{place_id}", status_code=302)
 
+  print(f"DEBUG: Modern file exists at {modern_path}: {os.path.exists(modern_path)}")
+    print(f"DEBUG: Past file exists at {past_path}: {os.path.exists(past_path)}")
+    
+    # Проверяем, где находится папка static
+    static_check = os.path.join(BASE_DIR, "app", "static")
+    print(f"DEBUG: Static directory should be at: {static_check}")
+    print(f"DEBUG: Static directory exists: {os.path.exists(static_check)}")
+    
+    # Проверяем, куда смотрит статический сервер
+    static_uploads = os.path.join(BASE_DIR, "app", "static", "uploads", "places", str(place_id), pair_folder)
+    print(f"DEBUG: Files should be accessible at: /static/uploads/places/{place_id}/{pair_folder}/")
+    print(f"DEBUG: Actual full path: {static_uploads}")
+    print(f"DEBUG: Modern file in static dir: {os.path.exists(os.path.join(static_uploads, modern_filename))}")
+
+
+
 @router.post("/place/{place_id}/delete_pair/{pair_id}")
 async def delete_image_pair(
     request: Request,
