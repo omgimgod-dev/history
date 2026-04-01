@@ -14,10 +14,10 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def admin_required(request: Request, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
     if not user_id:
-        return RedirectResponse(url="/auth/login", status_code=302)
+        return None  # ← возвращаем None вместо RedirectResponse
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_admin:
-        return RedirectResponse(url="/", status_code=302)
+        return None  # ← возвращаем None вместо RedirectResponse
     return user
 
 @router.get("/", response_class=HTMLResponse)
