@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
-from ..templates_config import env  # ← импортируем окружение
+from ..templates_config import env
 from passlib.context import CryptContext
-from fastapi import Form
 
 router = APIRouter(tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -35,7 +34,6 @@ async def login(
         )
         return HTMLResponse(content=content)
     
-    # Успешный вход
     request.session["user_id"] = user.id
     return RedirectResponse(url="/", status_code=303)
 
@@ -55,7 +53,6 @@ async def register(
     db: Session = Depends(get_db)
 ):
     """Обработка регистрации"""
-    # Проверяем, существует ли пользователь
     existing_user = db.query(User).filter(
         (User.username == username) | (User.email == email)
     ).first()
@@ -68,7 +65,6 @@ async def register(
         )
         return HTMLResponse(content=content)
     
-    # Создаем нового пользователя
     hashed_password = pwd_context.hash(password)
     new_user = User(
         username=username,
@@ -79,7 +75,6 @@ async def register(
     db.commit()
     db.refresh(new_user)
     
-    # Автоматически входим после регистрации
     request.session["user_id"] = new_user.id
     return RedirectResponse(url="/", status_code=303)
 
