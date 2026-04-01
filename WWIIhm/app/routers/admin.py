@@ -2,14 +2,14 @@ import os
 import shutil
 from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import User, Place, ImagePair,Review
+from ..models import User, Place, ImagePair, Review
+from ..templates_config import env
 import time
+from pathlib import Path
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-templates = Jinja2Templates(directory="app/templates")
 
 async def admin_required(request: Request, db: Session = Depends(get_db)):
     user_id = request.session.get("user_id")
@@ -25,20 +25,36 @@ async def admin_panel(request: Request, db: Session = Depends(get_db), admin: Us
     places = db.query(Place).all()
     main_map_image = "/static/uploads/city_map.jpg"
     if places:
-        main_map_image = places[0].map_image
-    return templates.TemplateResponse("admin.html", {
-        "request": request,
-        "places": places,
-        "user": admin,
-        "main_map_image": main_map_image
-    })
+        raw_image = places[0].map_image
+        if isinstance(raw_image, tuple):
+            main_map_image = raw_image[0] if raw_image else "/static/uploads/city_map.jpg"
+        elif isinstance(raw_image, dict):
+            main_map_image = raw_image.get('map_image') or raw_image.get('image') or "/static/uploads/city_map.jpg"
+        elif raw_image:
+            main_map_image = str(raw_image)
+    
+    template = env.get_template("admin.html")
+    content = await template.render_async(
+        request=request,
+        places=places,
+        user=admin,
+        main_map_image=main_map_image
+    )
+    return HTMLResponse(content=content)
 
 @router.get("/edit_place/{place_id}", response_class=HTMLResponse)
 async def edit_place(request: Request, place_id: int, db: Session = Depends(get_db), admin: User = Depends(admin_required)):
     place = db.query(Place).filter(Place.id == place_id).first()
     if not place:
         return RedirectResponse(url="/admin", status_code=404)
-    return templates.TemplateResponse("edit_place.html", {"request": request, "place": place, "user": admin})
+    
+    template = env.get_template("edit_place.html")
+    content = await template.render_async(
+        request=request,
+        place=place,
+        user=admin
+    )
+    return HTMLResponse(content=content)
 
 @router.post("/edit_place/{place_id}")
 async def update_place(
@@ -124,18 +140,15 @@ async def delete_image_pair(
         return RedirectResponse(url=f"/admin/edit_place/{place_id}", status_code=404)
 
     # Удаляем файлы и папку
-    # Получаем абсолютный путь к папке пары
-    # modern_path = pair.modern_path (начинается с /static/...)
-    # Преобразуем в относительный путь от корня проекта
-    # Например, "/static/uploads/places/1/pair_123456/modern.jpg" -> "app/static/uploads/places/1/pair_123456"
-    import os
-    from pathlib import Path
-    modern_full = Path("app" + pair.modern_path)  # так как pair.modern_path начинается с /static, а нам нужно app/static
-    # Но у нас путь уже включает /static, поэтому лучше создать полный путь от корня проекта
-    # Проще: берём директорию, где лежит modern, и удаляем её целиком
-    pair_dir = os.path.dirname(modern_full)
-    if os.path.exists(pair_dir):
-        shutil.rmtree(pair_dir)
+    try:
+        # Получаем абсолютный путь к папке пары
+        modern_full = Path("app" + pair.modern_path)
+        pair_dir = os.path.dirname(modern_full)
+        if os.path.exists(pair_dir):
+            shutil.rmtree(pair_dir)
+    except Exception as e:
+        # Если не удалось удалить папку, продолжаем (файлы уже могут быть удалены)
+        pass
 
     db.delete(pair)
     db.commit()
@@ -165,7 +178,12 @@ async def upload_map(
 
 @router.get("/add_place", response_class=HTMLResponse)
 async def add_place_form(request: Request, admin: User = Depends(admin_required)):
-    return templates.TemplateResponse("add_place.html", {"request": request, "user": admin})
+    template = env.get_template("add_place.html")
+    content = await template.render_async(
+        request=request,
+        user=admin
+    )
+    return HTMLResponse(content=content)
 
 @router.post("/add_place_click")
 async def add_place_click(
