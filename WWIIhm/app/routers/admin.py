@@ -12,16 +12,20 @@ from pathlib import Path
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 async def admin_required(request: Request, db: Session = Depends(get_db)):
+    """Проверка, является ли пользователь администратором"""
     user_id = request.session.get("user_id")
     if not user_id:
-        return None  # ← возвращаем None вместо RedirectResponse
+        return None
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_admin:
-        return None  # ← возвращаем None вместо RedirectResponse
+        return None
     return user
 
 @router.get("/", response_class=HTMLResponse)
 async def admin_panel(request: Request, db: Session = Depends(get_db), admin: User = Depends(admin_required)):
+    if not admin:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
     places = db.query(Place).all()
     main_map_image = "/static/uploads/city_map.jpg"
     if places:
@@ -44,6 +48,9 @@ async def admin_panel(request: Request, db: Session = Depends(get_db), admin: Us
 
 @router.get("/edit_place/{place_id}", response_class=HTMLResponse)
 async def edit_place(request: Request, place_id: int, db: Session = Depends(get_db), admin: User = Depends(admin_required)):
+    if not admin:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
     place = db.query(Place).filter(Place.id == place_id).first()
     if not place:
         return RedirectResponse(url="/admin", status_code=404)
@@ -65,6 +72,9 @@ async def update_place(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
+    if not admin:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
     place = db.query(Place).filter(Place.id == place_id).first()
     if place:
         place.name = name
@@ -72,7 +82,6 @@ async def update_place(
         db.commit()
     return RedirectResponse(url=f"/admin/edit_place/{place_id}", status_code=302)
 
-# Добавление новой пары изображений
 @router.post("/place/{place_id}/add_pair")
 async def add_image_pair(
     request: Request,
@@ -82,25 +91,24 @@ async def add_image_pair(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
+    if not admin:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    
     place = db.query(Place).filter(Place.id == place_id).first()
     if not place:
         return JSONResponse(status_code=404, content={"error": "Place not found"})
 
-    # Проверка, что оба файла загружены
     if not modern or not past:
         return JSONResponse(status_code=400, content={"error": "Both modern and past images are required"})
 
-    # Создаём директорию для места, если её нет
     place_dir = f"app/static/uploads/places/{place_id}"
     os.makedirs(place_dir, exist_ok=True)
 
-    # Создаём уникальную подпапку для пары (на основе временной метки)
     timestamp = int(time.time())
     pair_folder = f"pair_{timestamp}"
     pair_path = os.path.join(place_dir, pair_folder)
     os.makedirs(pair_path, exist_ok=True)
 
-    # Сохраняем файлы с фиксированными именами modern и past (сохраняем расширение)
     modern_ext = os.path.splitext(modern.filename)[1]
     past_ext = os.path.splitext(past.filename)[1]
     modern_filename = f"modern{modern_ext}"
@@ -113,7 +121,6 @@ async def add_image_pair(
     with open(past_path, "wb") as buffer:
         shutil.copyfileobj(past.file, buffer)
 
-    # Определяем следующий индекс пары для сортировки
     max_index = db.query(ImagePair).filter(ImagePair.place_id == place_id).count()
     new_pair = ImagePair(
         place_id=place_id,
@@ -126,7 +133,6 @@ async def add_image_pair(
 
     return RedirectResponse(url=f"/admin/edit_place/{place_id}", status_code=302)
 
-# Удаление пары изображений
 @router.post("/place/{place_id}/delete_pair/{pair_id}")
 async def delete_image_pair(
     request: Request,
@@ -135,19 +141,19 @@ async def delete_image_pair(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
+    if not admin:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
     pair = db.query(ImagePair).filter(ImagePair.id == pair_id, ImagePair.place_id == place_id).first()
     if not pair:
         return RedirectResponse(url=f"/admin/edit_place/{place_id}", status_code=404)
 
-    # Удаляем файлы и папку
     try:
-        # Получаем абсолютный путь к папке пары
         modern_full = Path("app" + pair.modern_path)
         pair_dir = os.path.dirname(modern_full)
         if os.path.exists(pair_dir):
             shutil.rmtree(pair_dir)
-    except Exception as e:
-        # Если не удалось удалить папку, продолжаем (файлы уже могут быть удалены)
+    except Exception:
         pass
 
     db.delete(pair)
@@ -161,7 +167,9 @@ async def upload_map(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
-    # Удаляем все отзывы, изображения, пары и места
+    if not admin:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
     db.query(Review).delete()
     db.query(ImagePair).delete()
     db.query(Place).delete()
@@ -178,6 +186,9 @@ async def upload_map(
 
 @router.get("/add_place", response_class=HTMLResponse)
 async def add_place_form(request: Request, admin: User = Depends(admin_required)):
+    if not admin:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
     template = env.get_template("add_place.html")
     content = await template.render_async(
         request=request,
@@ -195,6 +206,9 @@ async def add_place_click(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
+    if not admin:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
     place = Place(
         name=name,
         description=description,
@@ -213,10 +227,13 @@ async def delete_place(
     db: Session = Depends(get_db),
     admin: User = Depends(admin_required)
 ):
+    if not admin:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
     place = db.query(Place).filter(Place.id == place_id).first()
     if not place:
         return RedirectResponse(url="/admin", status_code=404)
-    # Удаляем папку с изображениями места
+    
     place_dir = f"app/static/uploads/places/{place_id}"
     if os.path.exists(place_dir):
         shutil.rmtree(place_dir)
