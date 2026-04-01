@@ -6,7 +6,7 @@ from .database import engine, SessionLocal
 from . import models
 from .routers import auth, places, forum, tests, admin, home
 import os
-from .templates_config import template_engine
+from .templates_config import env
 # Определяем базовую директорию
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
