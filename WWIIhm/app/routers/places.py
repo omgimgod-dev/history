@@ -1,41 +1,74 @@
-from fastapi import APIRouter, Request, Form, Depends, HTTPException, UploadFile, File
-from fastapi.responses import RedirectResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session
-from ..database import SessionLocal
-from ..models import Place, Review, User
 import os
-import shutil
+from fastapi import APIRouter, Request, Depends, HTTPException, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy.orm import Session
+from ..database import get_db
+from ..models import Place, Review, User
+from ..templates_config import env
 
-router = APIRouter(prefix="/places", tags=["places"])
-templates = Jinja2Templates(directory="app/templates")
+router = APIRouter(tags=["places"])
 
-def get_db(request: Request):
-    return request.state.db
+def get_current_user(request: Request, db: Session = Depends(get_db)):
+    user_id = request.session.get("user_id")
+    if user_id:
+        return db.query(User).filter(User.id == user_id).first()
+    return None
 
-@router.get("/", response_class=HTMLResponse)
-async def index(request: Request, db: Session = Depends(get_db)):
-    places = db.query(Place).all()
-    # главное фото города (можно взять из первого места или отдельной настройки)
-    main_image = "/static/uploads/city_map.jpg"  # заглушка
-    return templates.TemplateResponse("index.html", {"request": request, "places": places, "main_image": main_image})
+def place_to_dict(place: Place) -> dict:
+    """Преобразует объект Place в словарь для шаблона"""
+    return {
+        "id": place.id,
+        "name": place.name,
+        "description": place.description,
+        "coord_x": place.coord_x,
+        "coord_y": place.coord_y,
+        "map_image": place.map_image,
+        "creator_id": place.creator_id,
+        "created_at": place.created_at,
+        "image_pairs": place.image_pairs  # это отношение, его нужно будет обработать отдельно
+    }
 
 @router.get("/place/{place_id}", response_class=HTMLResponse)
 async def place_detail(request: Request, place_id: int, db: Session = Depends(get_db)):
     place = db.query(Place).filter(Place.id == place_id).first()
     if not place:
-        raise HTTPException(status_code=404)
-    reviews = db.query(Review).filter(Review.place_id == place_id).order_by(Review.created_at.desc()).limit(5).all()
-    return templates.TemplateResponse("place.html", {"request": request, "place": place, "reviews": reviews})
+        raise HTTPException(status_code=404, detail="Место не найдено")
+    
+    reviews = db.query(Review).filter(Review.place_id == place_id).all()
+    user = get_current_user(request, db)
+    
+    template = env.get_template("place.html")
+    content = await template.render_async(
+        request=request,
+        place=place,
+        reviews=reviews,
+        user=user
+    )
+    return HTMLResponse(content=content)
 
-@router.post("/place/{place_id}/review")
-async def add_review(request: Request, place_id: int, text: str = Form(...), db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return RedirectResponse(url="/auth/login", status_code=302)
-    review = Review(place_id=place_id, user_id=user_id, text=text)
-    db.add(review)
+@router.post("/place/{place_id}/review", response_class=HTMLResponse)
+async def add_review(
+    request: Request,
+    place_id: int,
+    rating: int = Form(...),
+    comment: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
+    place = db.query(Place).filter(Place.id == place_id).first()
+    if not place:
+        raise HTTPException(status_code=404, detail="Место не найдено")
+    
+    new_review = Review(
+        rating=rating,
+        comment=comment,
+        place_id=place_id,
+        user_id=user.id
+    )
+    db.add(new_review)
     db.commit()
-    return RedirectResponse(url=f"/places/place/{place_id}", status_code=302)
-
-# Админские функции добавления/редактирования места будут в admin.py+
+    
+    return RedirectResponse(url=f"/places/place/{place_id}", status_code=303)
