@@ -94,7 +94,7 @@ async def register(
     new_user = User(
         username=username,
         email=email,
-        password=hashed_password,  # ← сохраняем в поле password
+        password=hashed_password,
         is_admin=False
     )
     db.add(new_user)
@@ -103,6 +103,25 @@ async def register(
     
     request.session["user_id"] = new_user.id
     return RedirectResponse(url="/", status_code=303)
+
+@router.get("/profile", response_class=HTMLResponse)
+async def profile(request: Request, db: Session = Depends(get_db)):
+    """Страница профиля пользователя"""
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
+    template = env.get_template("profile.html")
+    content = await template.render_async(
+        request=request,
+        user=user
+    )
+    return HTMLResponse(content=content)
+
 @router.post("/profile/update")
 async def update_profile(
     request: Request,
@@ -231,8 +250,6 @@ async def change_password(
     return JSONResponse(
         content={"success": True, "message": "Пароль успешно изменен"}
     )
-
-
 
 @router.get("/logout")
 async def logout(request: Request):
