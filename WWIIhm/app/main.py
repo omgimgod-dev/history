@@ -8,8 +8,10 @@ from .routers import auth, places, forum, tests, admin, home
 from .templates_config import env
 from passlib.context import CryptContext
 
-# Определяем базовую директорию
+# Определяем базовую директорию (WWIIhm/app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Определяем корневую директорию проекта (WWIIhm)
+ROOT_DIR = os.path.dirname(BASE_DIR)
 
 # Создаем таблицы
 models.Base.metadata.create_all(bind=engine)
@@ -21,12 +23,23 @@ app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
 
 # Подключаем статические файлы
-app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+static_dir = os.path.join(BASE_DIR, "static")
+print(f"Static directory: {static_dir}")
+print(f"Static directory exists: {os.path.exists(static_dir)}")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Создаем папку uploads и все подпапки
-os.makedirs("app/static/uploads", exist_ok=True)
-os.makedirs("app/static/uploads/places", exist_ok=True)
-os.makedirs("app/static/uploads/avatars", exist_ok=True)
+# Создаем папки для загрузок (используем абсолютные пути)
+uploads_dir = os.path.join(BASE_DIR, "static", "uploads")
+places_dir = os.path.join(uploads_dir, "places")
+avatars_dir = os.path.join(uploads_dir, "avatars")
+
+os.makedirs(uploads_dir, exist_ok=True)
+os.makedirs(places_dir, exist_ok=True)
+os.makedirs(avatars_dir, exist_ok=True)
+
+print(f"Uploads directory: {uploads_dir}")
+print(f"Places directory: {places_dir}")
+print(f"Avatars directory: {avatars_dir}")
 
 # Подключаем роутеры
 app.include_router(auth.router)
@@ -43,9 +56,6 @@ async def db_session_middleware(request: Request, call_next):
     response = await call_next(request)
     request.state.db.close()
     return response
-
-# Создаем папку uploads, если её нет
-os.makedirs("app/static/uploads", exist_ok=True)
 
 # Настройка хеширования паролей
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -91,6 +101,7 @@ def reset_all_passwords():
         return {"success": False, "error": str(e)}
     finally:
         db.close()
+
 # Инициализация админа и пользователя при пустой БД
 @app.on_event("startup")
 def startup():
