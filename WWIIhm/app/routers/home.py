@@ -14,6 +14,16 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         return db.query(User).filter(User.id == user_id).first()
     return None
 
+def place_to_dict(place: Place) -> dict:
+    """Преобразует объект Place в словарь для JSON"""
+    return {
+        "id": place.id,
+        "name": place.name,
+        "x": place.coord_x,
+        "y": place.coord_y,
+        "map_image": place.map_image
+    }
+
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request, db: Session = Depends(get_db)):
     places = db.query(Place).all()
@@ -28,11 +38,13 @@ async def home(request: Request, db: Session = Depends(get_db)):
         elif raw_image:
             main_map_image = str(raw_image)
     
-    # Рендерим шаблон асинхронно
+    # Преобразуем места в словари для JSON
+    places_dicts = [place_to_dict(place) for place in places]
+    
     template = env.get_template("index.html")
-    content = await template.render_async(  # ← используем render_async
+    content = await template.render_async(
         request=request,
-        places=places,
+        places=places_dicts,  # ← передаем словари вместо объектов
         user=user,
         main_map_image=main_map_image
     )
@@ -42,9 +54,8 @@ async def home(request: Request, db: Session = Depends(get_db)):
 async def about(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     template = env.get_template("about.html")
-    content = await template.render_async(  # ← используем render_async
+    content = await template.render_async(
         request=request,
         user=user
     )
     return HTMLResponse(content=content)
-    
