@@ -20,10 +20,22 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 async def home(request: Request, db: Session = Depends(get_db)):
     places = db.query(Place).all()
     user = get_current_user(request, db)
+    
     # Используем изображение карты из первого места или стандартное
     main_map_image = "/static/uploads/city_map.jpg"
     if places:
-        main_map_image = places[0].map_image
+        # Получаем map_image и преобразуем в строку
+        raw_image = places[0].map_image
+        # 🔧 ИСПРАВЛЕНИЕ: преобразуем в строку, если это кортеж или словарь
+        if isinstance(raw_image, tuple):
+            main_map_image = raw_image[0] if raw_image else "/static/uploads/city_map.jpg"
+        elif isinstance(raw_image, dict):
+            main_map_image = raw_image.get('map_image') or raw_image.get('image') or "/static/uploads/city_map.jpg"
+        elif raw_image:
+            main_map_image = str(raw_image)
+        else:
+            main_map_image = "/static/uploads/city_map.jpg"
+    
     return templates.TemplateResponse("index.html", {
         "request": request,
         "places": places,
