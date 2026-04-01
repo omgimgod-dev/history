@@ -51,20 +51,25 @@ def startup():
     db = SessionLocal()
     try:
         if db.query(models.User).count() == 0:
-            # Хешируем пароли!
+            # Создаем админа — хешируем пароль
             admin = models.User(
                 username="admin",
-                hashed_password=pwd_context.hash("admin123"),
+                password=pwd_context.hash("admin123"),  # ← поле password
                 is_admin=True
             )
+            # Создаем обычного пользователя
             user = models.User(
                 username="user",
-                hashed_password=pwd_context.hash("user123"),
+                password=pwd_context.hash("user123"),  # ← поле password
                 is_admin=False
             )
             db.add_all([admin, user])
             db.commit()
             print("✅ Admin and user created successfully")
+            print("   Admin login: admin / admin123")
+            print("   User login: user / user123")
+        else:
+            print("✅ Users already exist")
     except Exception as e:
         print(f"❌ Error creating users: {e}")
     finally:
