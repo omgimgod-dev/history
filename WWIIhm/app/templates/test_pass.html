@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Прохождение теста: {{ test.title }}{% endblock %}
+
+{% block content %}
+<h1>{{ test.title }}</h1>
+
+<div class="question-nav">
+    {% for q in questions %}
+        <a href="/tests/{{ test.id }}/pass?q={{ loop.index0 }}" 
+           class="question-dot {% if q.id in answers %}answered{% endif %} {% if loop.index0 == question_index %}current{% endif %}">
+            {{ loop.index }}
+        </a>
+    {% endfor %}
+</div>
+
+<form method="post" action="/tests/{{ test.id }}/pass">
+    <input type="hidden" name="question_id" value="{{ current_question.id }}">
+    <input type="hidden" name="question_index" value="{{ question_index }}">
+
+    <div class="question-block">
+        <h3>Вопрос {{ question_index + 1 }} из {{ questions|length }}</h3>
+        <p>{{ current_question.text }}</p>
+
+        {% if current_question.type == 'choice' %}
+            {% for option in current_question.options.split('|') %}
+                <div>
+                    <label>
+                        <input type="radio" name="answer" value="{{ option }}" 
+                               {% if answers.get(current_question.id) == option %}checked{% endif %} required>
+                        {{ option }}
+                    </label>
+                </div>
+            {% endfor %}
+        {% elif current_question.type == 'text' %}
+            <input type="text" name="answer" value="{{ answers.get(current_question.id, '') }}" required>
+        {% endif %}
+    </div>
+
+    <div class="action-buttons">
+        {% if question_index > 0 %}
+            <button type="submit" name="action" value="prev" class="btn btn-secondary">Назад</button>
+        {% endif %}
+        {% if question_index < questions|length - 1 %}
+            <button type="submit" name="action" value="next" class="btn">Далее</button>
+        {% else %}
+            <button type="submit" name="action" value="finish" class="btn btn-danger">Закончить попытку</button>
+        {% endif %}
+    </div>
+</form>
+
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Результат теста: {{ test.title }}{% endblock %}
+
+{% block content %}
+<h1>Результат: {{ test.title }}</h1>
+<p>Ваш результат: {{ attempt.score }}/{{ results|length }}</p>
+
+<table class="best-table">
+    <thead>
+        <tr>
+            <th>Вопрос</th>
+            <th>Ваш ответ</th>
+            <th>Правильный ответ</th>
+            <th>Результат</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in results %}
+        <tr style="background-color: {% if r.correct %}#d4edda{% else %}#f8d7da{% endif %};">
+            <td>{{ r.question.text }}</td>
+            <td>{{ r.user_answer }}</td>
+            <td>{{ r.question.correct_answer }}</td>
+            <td>{% if r.correct %}✅{% else %}❌{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="/tests/{{ test.id }}" class="btn">Вернуться к тесту</a>
+{% endblock %}

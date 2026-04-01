@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ place.name }}{% endblock %}
+{% block content %}
+<div class="place-page">
+    
+
+    <!-- Блок с изображениями полностью сохранён как в оригинале -->
+    <div class="place-images login">
+        {% if place.image_pairs %}
+            {% set first_pair = place.image_pairs[0] %}
+
+            <div class="twentytwenty-container main-image">
+                <img src="{{ first_pair.modern_path }}" alt="Сегодня" style="height: 500px; width: 400px; object-fit: cover;">
+                <img src="{{ first_pair.past_path }}" alt="Прошлое" style="height: 500px; width: 400px; object-fit: cover;">
+            </div>
+
+            {% if place.image_pairs|length > 1 %}
+            <div class="thumbnails">
+                {% for pair in place.image_pairs %}
+                    <img src="{{ pair.modern_path }}" alt="Thumb" style="width: 100px; height: auto; cursor: pointer;" onclick="updateMainImage('{{ pair.modern_path }}', '{{ pair.past_path }}')">
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% else %}
+            <p>Изображения отсутствуют.</p>
+        {% endif %}
+    </div>
+    <h1>{{ place.name }}</h1>
+
+    <div class="place-description">
+        {{ place.description }}
+    </div>
+
+    <a href="/" class="btn btn-secondary" style="padding-top: 10px; ;">Назад на главную</a>
+</div>
+
+
+
+<script>
+// Функция для обновления обоих изображений в TwentyTwenty контейнере
+function updateMainImage(modernSrc, pastSrc) {
+    const container = document.querySelector('.twentytwenty-container');
+    if (!container) return;
+
+    const images = container.getElementsByTagName('img');
+    if (images.length < 2) return;
+
+    // Обновляем источники изображений
+    images[0].src = modernSrc;  // левое (modern)
+    images[1].src = pastSrc;    // правое (past)
+
+    // Если используется jQuery-плагин TwentyTwenty, переинициализируем его
+    if (typeof $ !== 'undefined' && $.fn.twentytwenty) {
+        // Уничтожаем старую инициализацию
+        $(container).trigger('destroy.twentytwenty');
+        // Ждём загрузки новых изображений перед инициализацией (опционально)
+        Promise.all([
+            new Promise(resolve => images[0].onload = resolve),
+            new Promise(resolve => images[1].onload = resolve)
+        ]).then(() => {
+            $(container).twentytwenty({ default_offset_pct: 0.5 });
+        });
+    }
+}
+
+
+// Дополнительная инициализация на случай, если изображения загружаются динамически
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof $ !== 'undefined' && $.fn.twentytwenty) {
+        $(".twentytwenty-container").twentytwenty({default_offset_pct: 0.5});
+    }
+});
+</script>
+
+
+{% endblock %}
+
+

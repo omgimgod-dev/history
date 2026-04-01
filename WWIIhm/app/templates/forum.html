@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Форум - Город трудовой доблести{% endblock %}
+
+{% block content %}
+<div class="forum-header">
+    <h1>Форум</h1>
+    {% if user %}
+        <a href="/forum/create" class="btn">+ Создать тему</a>
+    {% endif %}
+</div>
+
+<div class="topic-list">
+    {% for topic in topics %}
+        <div class="topic-card">
+            <img src="{{ topic.creator.avatar if topic.creator else '/static/uploads/default_avatar.png' }}" alt="Avatar" class="topic-avatar">
+            <div class="topic-info">
+                <h3><a href="/forum/topic/{{ topic.id }}">{{ topic.title }}</a></h3>
+                <p class="topic-meta">
+                    <span class="author">Автор: {{ topic.creator.username if topic.creator else 'Неизвестно' }}</span>
+                    <span class="date">{{ topic.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                </p>
+                <p class="topic-excerpt">{{ topic.content[:150] }}{% if topic.content|length > 150 %}...{% endif %}</p>
+            </div>
+            <div class="topic-stats">
+                <span class="comments-count">0 ответов</span> <!-- Здесь можно динамически подставлять количество комментариев, если есть -->
+            </div>
+        </div>
+    {% else %}
+        <p class="no-topics">Пока нет тем для обсуждения. Будьте первым!</p>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ topic.title }} - Форум{% endblock %}
+
+{% block content %}
+<h1>{{ topic.title }}</h1>
+<div class="topic-meta">
+    Автор: <img src="{{ topic.creator.avatar if topic.creator else '/static/uploads/default_avatar.png' }}" alt="avatar" class="avatar-small">
+    {{ topic.creator.username if topic.creator else 'Неизвестно' }} | {{ topic.created_at.strftime('%d.%m.%Y %H:%M') }}
+</div>
+<div class="topic-content">
+    <p>{{ topic.content }}</p>
+</div>
+
+<h2>Сообщения</h2>
+<div class="posts-container">
+    {% for post in posts %}
+        <div class="post">
+            <img src="{{ post.creator.avatar if post.creator else '/static/uploads/default_avatar.png' }}" alt="avatar" class="post-avatar">
+            <div class="post-body">
+                <div class="post-header">
+                    <span class="post-author">{{ post.creator.username if post.creator else 'Неизвестно' }}</span>
+                    <span class="post-date">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+                <div class="post-content">{{ post.content }}</div>
+            </div>
+        </div>
+    {% else %}
+        <p>Пока нет сообщений. Будьте первым!</p>
+    {% endfor %}
+</div>
+
+{% if user %}
+    <form method="post" action="/forum/topic/{{ topic.id }}/post">
+        <div class="form-group">
+            <label for="content">Ваше сообщение</label>
+            <textarea id="content" name="content" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn">Отправить</button>
+    </form>
+{% else %}
+    <p><a href="/auth/login">Войдите</a>, чтобы написать сообщение.</p>
+{% endif %}
+
+<a href="/forum" class="btn btn-secondary">Назад к списку тем</a>
+{% endblock %}

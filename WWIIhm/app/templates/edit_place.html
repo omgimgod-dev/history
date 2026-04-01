@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Редактирование места{% endblock %}
+
+{% block content %}
+<h1>Редактирование места: {{ place.name }}</h1>
+
+<form method="post" action="/admin/edit_place/{{ place.id }}">
+    <div class="form-group">
+        <label for="name">Название места</label>
+        <input type="text" id="name" name="name" value="{{ place.name }}" required>
+    </div>
+    <div class="form-group">
+        <label for="description">Описание</label>
+        <textarea id="description" name="description" rows="5" required>{{ place.description }}</textarea>
+    </div>
+    <button type="submit" class="btn">Сохранить изменения</button>
+</form>
+
+<h2>Пары изображений</h2>
+<div id="pairs-list">
+    {% for pair in place.image_pairs %}
+        <div class="pair-item" style="display: flex; align-items: center; margin-bottom: 20px; border: 1px solid #ccc; padding: 10px;">
+            <div style="display: flex; gap: 10px;">
+                <div>
+                    <img src="{{ pair.modern_path }}" alt="Modern" style="width: 200px; height: auto;">
+                    <p>Сегодня</p>
+                </div>
+                <div>
+                    <img src="{{ pair.past_path }}" alt="Past" style="width: 200px; height: auto;">
+                    <p>Прошлое</p>
+                </div>
+            </div>
+            <form method="post" action="/admin/place/{{ place.id }}/delete_pair/{{ pair.id }}" style="margin-left: 20px;" onsubmit="return confirm('Удалить эту пару?');">
+                <button type="submit" class="btn btn-danger">Удалить</button>
+            </form>
+        </div>
+    {% else %}
+        <p>Пока нет ни одной пары изображений.</p>
+    {% endfor %}
+</div>
+
+<h3>Добавить новую пару</h3>
+<form id="add-pair-form" method="post" action="/admin/place/{{ place.id }}/add_pair" enctype="multipart/form-data">
+    <div style="display: flex; gap: 20px;">
+        <div>
+            <label>Добавьте фото</label><br>
+            <label>Сегодня (modern)</label><br>
+            <input type="file" name="modern" accept="image/*" required>
+        </div>
+        <div>
+            <label>Добавьте фото</label><br>
+            <label>Прошлое (past)</label><br>
+            <input type="file" name="past" accept="image/*" required>
+        </div>
+    </div>
+    <button type="submit" class="btn" style="margin-top: 10px;">Добавить пару</button>
+</form>
+
+<script>
+    // Клиентская валидация: проверка, что оба файла выбраны
+    document.getElementById('add-pair-form').addEventListener('submit', function(e) {
+        const modern = document.querySelector('input[name="modern"]').files[0];
+        const past = document.querySelector('input[name="past"]').files[0];
+        if (!modern || !past) {
+            e.preventDefault();
+            alert('Пожалуйста, выберите оба изображения: для "Сегодня" и для "Прошлое".');
+        }
+    });
+</script>
+
+<a href="/admin" class="btn btn-secondary">Назад в админку</a>
+{% endblock %}

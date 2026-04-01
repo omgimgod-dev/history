@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Тесты{% endblock %}
+
+{% block content %}
+<h1>Тесты</h1>
+
+<div class="tests-list">
+    {% for test in tests %}
+        <div class="test-card">
+            <div class="test-info">
+                <h3><a href="/tests/{{ test.id }}">{{ test.title }}</a></h3>
+                <p class="test-creator">Автор: {{ test.creator.username if test.creator else 'Админ' }}</p>
+                <p>{{ test.description[:100] }}{% if test.description|length > 100 %}...{% endif %}</p>
+            </div>
+            <a href="/tests/{{ test.id }}" class="btn">Подробнее</a>
+        </div>
+    {% else %}
+        <p>Пока нет тестов.</p>
+    {% endfor %}
+</div>
+{% endblock %}

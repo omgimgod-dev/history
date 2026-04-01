@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Личный кабинет{% endblock %}
+{% block content %}
+<div class="profile-container">
+    <h1>Личный кабинет</h1>
+    
+    <div class="profile-card">
+        <div class="profile-avatar-section">
+            <img src="{{ user.avatar if user.avatar else '/static/uploads/default_avatar.png' }}" alt="avatar" class="profile-avatar">
+            <form method="post" action="/auth/profile/upload-avatar" enctype="multipart/form-data" class="avatar-upload">
+                <label for="avatar-input" class="btn btn-secondary">Загрузить новый аватар</label>
+                <input type="file" id="avatar-input" name="avatar" accept="image/*" style="display: none;" onchange="this.form.submit()">
+            </form>
+        </div>
+        
+        <div class="profile-info">
+            <h2>{{ user.username }}</h2>
+            {% if user.bio %}
+                <p class="profile-bio">{{ user.bio }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="profile-edit-section">
+        <h3>Редактировать профиль</h3>
+        <form method="post" action="/auth/profile/update" class="profile-form">
+            <div class="form-group">
+                <label for="username">Имя пользователя</label>
+                <input type="text" id="username" name="username" value="{{ user.username }}" required>
+            </div>
+            <div class="form-group">
+                <label for="bio">О себе</label>
+                <textarea id="bio" name="bio" rows="4">{{ user.bio or '' }}</textarea>
+            </div>
+            <button type="submit" class="btn">Сохранить изменения</button>
+        </form>
+    </div>
+
+    <div class="profile-password-section">
+        <h3>Изменить пароль</h3>
+
+        
+
+    
+    <div class="profile-password-section">
+    <h3>Изменить пароль</h3>
+    
+    
+    <div id="password-message" class="message-container" style="display: none;"></div>
+    
+    <form id="change-password-form" class="profile-form" method="post" onsubmit="return false;">
+        <div class="form-group">
+            <label for="old_password">Старый пароль</label>
+            <input type="password" id="old_password" name="old_password" required>
+        </div>
+        <div class="form-group">
+            <label for="new_password">Новый пароль</label>
+            <input type="password" id="new_password" name="new_password" required>
+        </div>
+        <div class="form-group">
+            <label for="confirm_password">Подтвердите новый пароль</label>
+            <input type="password" id="confirm_password" name="confirm_password" required>
+        </div>
+        <button type="submit" id="change-password-btn" class="btn">Изменить пароль</button>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('change-password-form');
+    const messageDiv = document.getElementById('password-message');
+    
+    
+    if (!form || !messageDiv) {
+        console.warn('Элементы формы или сообщения не найдены');
+        return;
+    }
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault(); 
+        
+        const formData = new FormData(form);
+        
+        
+        messageDiv.style.display = 'none';
+        messageDiv.innerHTML = '';
+        
+        try {
+            const response = await fetch('/auth/profile/change-password', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                messageDiv.className = 'message-container success';
+                messageDiv.innerHTML = data.message;
+                messageDiv.style.display = 'block';
+                form.reset(); 
+                
+                
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 3000);
+            } else {
+                messageDiv.className = 'message-container error';
+                messageDiv.innerHTML = data.error;
+                messageDiv.style.display = 'block';
+                
+                
+                if (data.fields && data.fields.old_password === '') {
+                    const oldField = document.getElementById('old_password');
+                    if (oldField) oldField.value = '';
+                }
+                
+                
+                if (data.fields && data.fields.new_password !== undefined) {
+                    const newField = document.getElementById('new_password');
+                    if (newField) newField.value = data.fields.new_password;
+                }
+                if (data.fields && data.fields.confirm_password !== undefined) {
+                    const confirmField = document.getElementById('confirm_password');
+                    if (confirmField) confirmField.value = data.fields.confirm_password;
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            messageDiv.className = 'message-container error';
+            messageDiv.innerHTML = 'Ошибка соединения с сервером';
+            messageDiv.style.display = 'block';
+        }
+    });
+});
+</script>
+
+
+<script>
+    
+    const passwordForm = document.querySelector('.profile-password-section form');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', function(e) {
+            const newPass = document.getElementById('new_password').value;
+            const confirmPass = document.getElementById('confirm_password').value;
+            if (newPass !== confirmPass) {
+                e.preventDefault();
+                alert('Новый пароль и подтверждение не совпадают');
+            }
+        });
+    }
+</script>
+
+{% endblock %}

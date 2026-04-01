@@ -1,0 +1,876 @@
+/* Общие стили */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+header {
+    background-color: #2c3e50;
+    color: white;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    text-decoration: none;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+nav a:hover {
+    opacity: 0.8;
+}
+
+main {
+    min-height: 77vh;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+}
+
+footer {
+    background-color: #34495e;
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    position: relative;
+    bottom: 0;
+    margin-top: 2rem;
+}
+
+
+
+
+.marker {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: #e74c3c;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    flex-direction: column-reverse;
+    flex-wrap: wrap;
+    align-content: center;
+
+}
+
+.marker:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+    background-color: #c0392b;
+}
+
+/* Формы */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea,
+select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+button, .btn {
+    background-color: #3498db;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 1%;
+}
+
+button:hover, .btn:hover {
+    background-color: #2980b9;
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
+/* Карточки тем форума */
+.topic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.topic-card {
+    margin-top: 5%;
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.topic-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.topic-info h3 {
+    margin: 0 0 0.3rem;
+}
+
+.topic-meta {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+/* Сообщения форума */
+.posts-container {
+    margin: 2rem 0;
+}
+
+.post {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 1rem;
+}
+
+.post-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.post-author {
+    font-weight: bold;
+}
+
+.post-date {
+    color: #95a5a6;
+    font-size: 0.8rem;
+}
+
+.post-content {
+    line-height: 1.5;
+}
+
+/* Тесты */
+.test-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.test-info h3 {
+    margin: 0 0 0.3rem;
+}
+
+.test-creator {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.best-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.best-table th,
+.best-table td {
+    padding: 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.best-table th {
+    background-color: #f2f2f2;
+}
+
+.best-table img.avatar-small {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Прохождение теста */
+.question-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.question-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #ecf0f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #2c3e50;
+    font-weight: bold;
+    border: 1px solid #bdc3c7;
+}
+
+.question-dot.answered {
+    background-color: #2ecc71;
+    color: white;
+    border-color: #27ae60;
+}
+
+.question-dot.current {
+    border: 2px solid #3498db;
+    transform: scale(1.1);
+}
+
+.question-dot:hover {
+    background-color: #bdc3c7;
+}
+
+/* Аватарки */
+.avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-small {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Пагинация */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 2rem 0;
+}
+
+.pagination a, .pagination span {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #3498db;
+}
+
+.pagination .current {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+/* Отзывы */
+.review {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 1rem;
+}
+
+
+
+/* Добавьте эти стили для правильного отображения */
+.twentytwenty-container {
+    height: 500px;
+    width: 800px; /* или 100% для адаптивности */
+    max-width: 100%;
+    margin-bottom: 20px;
+}
+
+.twentytwenty-container img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+}
+
+.thumbnails {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.thumbnails img {
+    border: 2px solid transparent;
+    transition: border-color 0.3s;
+}
+
+.thumbnails img:hover {
+    border-color: #007bff;
+}
+
+@media (max-width: 768px) {
+    .twentytwenty-container {
+        height: 300px;
+    }
+}
+
+
+.crud>div>input {
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+}
+
+.crud{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.crud>div>label>div {
+    display: flex;
+    flex-direction: column;
+}
+
+.new_place{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.new_place>form{
+
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    width: 30vw;
+}
+
+/* Стилизация нативного диалога */
+        dialog {
+            padding: 0;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            min-width: 400px;
+            max-height: 80vh;
+        }
+
+        dialog::backdrop {
+            background-color: rgba(0,0,0,0.5); /* Затемнение фона */
+        }
+
+        .modal-content {
+            padding: 30px;
+            position: relative;
+        }
+
+        .close-dialog {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: #000;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .open-dialog {
+            padding: 10px 20px;
+            background-color: #555;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+.map{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#places-list>ul{
+    display: flex;
+        flex-direction: column;
+
+}
+
+.marker-tooltip{
+    background: #333;
+    color: #fff;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    border: solid #fff 2px;
+    user-select: none;
+    display: none;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    font-size: 14px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+/* Показываем тултип при наведении на маркер */
+.marker:hover .marker-tooltip {
+    display: block;
+}
+
+.info:hover {
+    color: green;
+    background: none;
+}
+
+.info {
+    position: absolute;
+    background: none;
+    z-index: 1000;
+}
+
+.login{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+/* ===== Профиль ===== */
+.profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.profile-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.profile-avatar-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.profile-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #3498db;
+}
+
+.avatar-upload {
+    text-align: center;
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-info h2 {
+    margin: 0 0 0.5rem;
+    color: #2c3e50;
+}
+
+.profile-bio {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #555;
+}
+
+.profile-edit-section, .profile-password-section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.profile-edit-section h3, .profile-password-section h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 0.5rem;
+}
+
+.profile-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.profile-actions {
+    text-align: right;
+}
+
+/* ===== Сетка мест на главной ===== */
+.places-grid-section {
+    margin-top: 3rem;
+}
+
+.places-grid-section h2 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.places-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.place-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.place-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.place-image {
+    height: 0;
+    padding-bottom: 70%; /* 70% от ширины, т.е. фото занимает 70% высоты контейнера */
+    background: #000;
+    position: relative;
+}
+
+.place-image img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* сохраняем пропорции, чёрные полосы */
+    background: #000;
+}
+
+.no-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background: #333;
+    font-size: 1rem;
+}
+
+.place-name {
+    padding: 1rem;
+    text-align: center;
+    font-weight: bold;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    color: #2c3e50;
+}
+
+/* ===== Страница места ===== */
+.place-page {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.main-image-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 2rem auto;
+    background: rgba(0,0,0,0.4); /* затемнение по бокам */
+    display: flex;
+    justify-content: center;
+}
+
+.main-image-container .twentytwenty-container {
+    width: auto !important; /* отключаем фиксированную ширину из CSS */
+    max-width: 100%;
+    height: 500px;
+}
+
+.main-image-container .twentytwenty-container img {
+    width: auto;
+    height: 100%;
+    object-fit: contain; /* сохраняем пропорции, но не растягиваем */
+}
+
+.thumbnails {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+}
+
+.thumbnail {
+    width: 100px;
+    height: 70px;
+    object-fit: cover;
+    border: 3px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s, border-color 0.2s;
+}
+
+.thumbnail:hover {
+    opacity: 0.8;
+}
+
+.thumbnail.active {
+    border-color: #3498db;
+    opacity: 0.7;
+}
+
+.place-description {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.place-description h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+    font-size: 1.5rem;
+}
+
+.place-description p {
+    line-height: 1.6;
+    font-size: 1.1rem;
+}
+
+/* ===== Форум (улучшенный) ===== */
+.forum-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.topic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.topic-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    transition: box-shadow 0.2s;
+}
+
+.topic-card:hover {
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+.topic-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #3498db;
+}
+
+.topic-info {
+    flex: 1;
+}
+
+.topic-info h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.3rem;
+}
+
+.topic-info h3 a {
+    text-decoration: none;
+    color: #2c3e50;
+}
+
+.topic-info h3 a:hover {
+    color: #3498db;
+}
+
+.topic-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    margin-bottom: 0.5rem;
+}
+
+.topic-excerpt {
+    color: #555;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.topic-stats {
+    min-width: 80px;
+    text-align: right;
+}
+
+.comments-count {
+    background: #ecf0f1;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: #2c3e50;
+}
+
+.no-topics {
+    text-align: center;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    color: #7f8c8d;
+}
+
+/* ===== Адаптивность для сетки ===== */
+@media (max-width: 768px) {
+    .places-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .places-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .profile-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+.btn-secondary {
+    display: inline-block;
+    margin-top: 3rem;           /* увеличенный отступ сверху */
+    padding: 0.6rem 1.5rem;
+    background: transparent;    /* прозрачный фон */
+    color: #2c3e50;             /* тёмный цвет текста */
+    text-decoration: none;
+    border-radius: 30px;
+    font-weight: 500;
+    border: 1px solid #bdc3c7;  /* тонкая рамка для видимости */
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(52, 152, 219, 0.15);  /* полупрозрачный синий */
+    border-color: #3498db;      /* рамка становится синей */
+    color: #2c3e50;              /* текст остаётся тёмным */
+}
+.message-container {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+.message-container.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+.message-container.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}

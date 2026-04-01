@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ test.title }} - Тесты{% endblock %}
+
+{% block content %}
+<h1>{{ test.title }}</h1>
+<p class="test-creator">Автор: {{ test.creator.username if test.creator else 'Админ' }}</p>
+<div class="test-description">
+    {{ test.description }}
+</div>
+
+{% if user %}
+    <a href="/tests/{{ test.id }}/pass" class="btn">Пройти тест</a>
+{% else %}
+    <p><a href="/auth/login">Войдите</a>, чтобы пройти тест.</p>
+{% endif %}
+
+<h2>Лучшие результаты</h2>
+<table class="best-table">
+    <thead>
+        <tr>
+            <th>Участник</th>
+            <th>Результат</th>
+            <th>Дата</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for attempt in best_attempts %}
+        <tr>
+            <td>
+                <img src="{{ attempt.user.avatar if attempt.user else '/static/uploads/default_avatar.png' }}" alt="avatar" class="avatar-small">
+                {{ attempt.user.username if attempt.user else 'Неизвестно' }}
+            </td>
+            <td>{{ attempt.score }}/{{ test.questions|length }}</td>
+            <td>{{ attempt.finished_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3">Пока нет результатов.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="/tests" class="btn btn-secondary">К списку тестов</a>
+{% endblock %}

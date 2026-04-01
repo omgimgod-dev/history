@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% block title %}Главная - Карта города{% endblock %}
+{% block content %}
+<h1>Карта города</h1>
+    <div style="display: flex;justify-content: center;">
+        <div id="map-container" class="zoom-container" >
+            <img id="city-map" src="{{ main_map_image }}"  alt="Карта города">
+            <!-- Маркеры будут добавляться через JS -->
+        </div>
+
+    </div>
+
+<!-- Сетка мест -->
+<section class="places-grid-section">
+    <h2>Достопримечательности</h2>
+    <div class="places-grid">
+        {% for place in places %}
+        <a href="/places/place/{{ place.id }}" class="place-card">
+            <div class="place-image">
+                {% if place.image_pairs and place.image_pairs|length > 0 %}
+                    <img src="{{ place.image_pairs[0].modern_path }}" alt="{{ place.name }}">
+                {% else %}
+                    <div class="no-image">Нет фото</div>
+                {% endif %}
+            </div>
+            <div class="place-name">{{ place.name }}</div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+
+
+    <style>
+        .zoom-container {
+            width: 100%;
+            max-width: 1000px;
+            height: 600px;
+            overflow: hidden;
+            position: relative;
+            background: #f5f5f5;  /* этот фон будет виден, только если картинка не покрывает контейнер */
+            cursor: grab;
+            touch-action: none;
+        }
+        .zoom-container:active {
+            cursor: grabbing;
+        }
+        #city-map {
+            display: block;
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            transform-origin: 0 0;
+            will-change: transform;
+            pointer-events: none; /* чтобы контейнер ловил все события */
+        }
+    </style>
+
+
+<script>
+    (function() {
+        const container = document.getElementById('map-container');
+        const img = document.getElementById('city-map');
+
+        let scale = 1;
+        let translateX = 0, translateY = 0;
+        let baseWidth = 0, baseHeight = 0;
+
+        const MIN_SCALE = 1;
+        const MAX_SCALE = 10;
+
+        // Глобальные переменные для map.js
+        window.mapScale = scale;
+        window.mapOffsetX = translateX;
+        window.mapOffsetY = translateY;
+        window.mapImageWidth = 0;
+        window.mapImageHeight = 0;
+        window.isDragging = false;
+
+        function updateGlobalTransform() {
+            window.mapScale = scale;
+            window.mapOffsetX = translateX;
+            window.mapOffsetY = translateY;
+            window.mapImageWidth = baseWidth;
+            window.mapImageHeight = baseHeight;
+        }
+
+        function updateTransform() {
+            img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            updateGlobalTransform();
+            if (typeof window.updateMarkers === 'function') {
+                window.updateMarkers();
+            }
+        }
+
+        function updateBaseSize() {
+            const prevTransform = img.style.transform;
+            img.style.transform = 'none';
+            const rect = img.getBoundingClientRect();
+            baseWidth = rect.width;
+            baseHeight = rect.height;
+            img.style.transform = prevTransform;
+        }
+
+        function clampTranslation() {
+            if (baseWidth === 0 || baseHeight === 0) return;
+
+            const currentWidth = baseWidth * scale;
+            const currentHeight = baseHeight * scale;
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+
+            if (currentWidth <= containerWidth) {
+                translateX = (containerWidth - currentWidth) / 2;
+            } else {
+                const maxX = 0;
+                const minX = containerWidth - currentWidth;
+                translateX = Math.min(maxX, Math.max(minX, translateX));
+            }
+
+            if (currentHeight <= containerHeight) {
+                translateY = (containerHeight - currentHeight) / 2;
+            } else {
+                const maxY = 0;
+                const minY = containerHeight - currentHeight;
+                translateY = Math.min(maxY, Math.max(minY, translateY));
+            }
+        }
+
+        function zoomAtPoint(delta, clientX, clientY) {
+            const prevScale = scale;
+            let newScale = scale + delta;
+            if (newScale < MIN_SCALE) newScale = MIN_SCALE;
+            if (newScale > MAX_SCALE) newScale = MAX_SCALE;
+            if (newScale === prevScale) return;
+
+            const rect = container.getBoundingClientRect();
+            const mouseX = clientX - rect.left;
+            const mouseY = clientY - rect.top;
+
+            const imgX = (mouseX - translateX) / prevScale;
+            const imgY = (mouseY - translateY) / prevScale;
+
+            scale = newScale;
+            translateX = mouseX - imgX * scale;
+            translateY = mouseY - imgY * scale;
+
+            clampTranslation();
+            updateTransform();
+        }
+
+        // Колесико мыши
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            zoomAtPoint(delta, e.clientX, e.clientY);
+        });
+
+        // Перетаскивание мышью
+        let startX, startY, startTranslateX, startTranslateY;
+
+        container.addEventListener('mousedown', (e) => {
+            window.isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startTranslateX = translateX;
+            startTranslateY = translateY;
+            container.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!window.isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            translateX = startTranslateX + dx;
+            translateY = startTranslateY + dy;
+            clampTranslation();
+            updateTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            window.isDragging = false;
+            container.style.cursor = 'grab';
+        });
+
+        // Сенсорные устройства
+        let touchStartDistance = 0;
+        let touchStartScale = 1;
+        let touchStartTranslateX, touchStartTranslateY;
+        let touchStartImgX, touchStartImgY;
+        let isPinching = false;
+
+        function getTouchDistance(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.hypot(dx, dy);
+        }
+
+        function getTouchCenter(touches) {
+            return {
+                x: (touches[0].clientX + touches[1].clientX) / 2,
+                y: (touches[0].clientY + touches[1].clientY) / 2
+            };
+        }
+
+        container.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touches = e.touches;
+            if (touches.length === 1) {
+                window.isDragging = true;
+                startX = touches[0].clientX;
+                startY = touches[0].clientY;
+                startTranslateX = translateX;
+                startTranslateY = translateY;
+            } else if (touches.length === 2) {
+                isPinching = true;
+                touchStartDistance = getTouchDistance(touches);
+                touchStartScale = scale;
+                const center = getTouchCenter(touches);
+                const rect = container.getBoundingClientRect();
+                const centerX = center.x - rect.left;
+                const centerY = center.y - rect.top;
+                touchStartImgX = (centerX - translateX) / scale;
+                touchStartImgY = (centerY - translateY) / scale;
+                touchStartTranslateX = translateX;
+                touchStartTranslateY = translateY;
+            }
+        });
+
+        container.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touches = e.touches;
+            if (touches.length === 1 && window.isDragging && !isPinching) {
+                const dx = touches[0].clientX - startX;
+                const dy = touches[0].clientY - startY;
+                translateX = startTranslateX + dx;
+                translateY = startTranslateY + dy;
+                clampTranslation();
+                updateTransform();
+            } else if (touches.length === 2 && isPinching) {
+                const newDistance = getTouchDistance(touches);
+                let newScale = touchStartScale * (newDistance / touchStartDistance);
+                if (newScale < MIN_SCALE) newScale = MIN_SCALE;
+                if (newScale > MAX_SCALE) newScale = MAX_SCALE;
+                if (newScale !== scale) {
+                    const center = getTouchCenter(touches);
+                    const rect = container.getBoundingClientRect();
+                    const mouseX = center.x - rect.left;
+                    const mouseY = center.y - rect.top;
+                    translateX = mouseX - touchStartImgX * newScale;
+                    translateY = mouseY - touchStartImgY * newScale;
+                    scale = newScale;
+                    clampTranslation();
+                    updateTransform();
+                }
+            }
+        });
+
+        container.addEventListener('touchend', () => {
+            window.isDragging = false;
+            isPinching = false;
+        });
+
+        function initPosition() {
+            updateBaseSize();
+            clampTranslation();
+            updateTransform();
+        }
+
+        if (img.complete) {
+            initPosition();
+        } else {
+            img.addEventListener('load', initPosition);
+        }
+
+        const resizeObserver = new ResizeObserver(() => {
+            if (baseWidth && baseHeight) {
+                updateBaseSize();
+                clampTranslation();
+                updateTransform();
+            }
+        });
+        resizeObserver.observe(container);
+    })();
+</script>
+
+<script src="/static/js/map.js"></script>
+<script>
+    const places = [
+        {% for place in places %}
+        {
+            id: {{ place.id }},
+            name: "{{ place.name }}",
+            x: {{ place.coord_x }},
+            y: {{ place.coord_y }}
+        },
+        {% endfor %}
+    ];
+    initMap(places);
+</script>
+{% endblock %}
