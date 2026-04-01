@@ -101,14 +101,18 @@ async def add_image_pair(
     if not modern or not past:
         return JSONResponse(status_code=400, content={"error": "Both modern and past images are required"})
 
-    place_dir = f"app/static/uploads/places/{place_id}"
+    # Создаём директорию для места, если её нет (полный путь от корня проекта)
+    base_upload_dir = "app/static/uploads/places"
+    place_dir = os.path.join(base_upload_dir, str(place_id))
     os.makedirs(place_dir, exist_ok=True)
 
+    # Создаём уникальную подпапку для пары
     timestamp = int(time.time())
     pair_folder = f"pair_{timestamp}"
     pair_path = os.path.join(place_dir, pair_folder)
     os.makedirs(pair_path, exist_ok=True)
 
+    # Сохраняем файлы
     modern_ext = os.path.splitext(modern.filename)[1]
     past_ext = os.path.splitext(past.filename)[1]
     modern_filename = f"modern{modern_ext}"
@@ -121,6 +125,7 @@ async def add_image_pair(
     with open(past_path, "wb") as buffer:
         shutil.copyfileobj(past.file, buffer)
 
+    # Определяем следующий индекс пары
     max_index = db.query(ImagePair).filter(ImagePair.place_id == place_id).count()
     new_pair = ImagePair(
         place_id=place_id,
@@ -149,12 +154,12 @@ async def delete_image_pair(
         return RedirectResponse(url=f"/admin/edit_place/{place_id}", status_code=404)
 
     try:
-        modern_full = Path("app" + pair.modern_path)
-        pair_dir = os.path.dirname(modern_full)
+        # Правильный путь к папке
+        pair_dir = os.path.join("app/static/uploads/places", str(place_id), os.path.basename(os.path.dirname(pair.modern_path)))
         if os.path.exists(pair_dir):
             shutil.rmtree(pair_dir)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error deleting pair directory: {e}")
 
     db.delete(pair)
     db.commit()
