@@ -107,7 +107,38 @@ def fix_passwords():
     finally:
         db.close()
 # =========================================================
-
+@app.get("/force-reset-passwords")
+def force_reset_passwords():
+    """Принудительный сброс паролей"""
+    db = SessionLocal()
+    try:
+        # Получаем всех пользователей
+        users = db.query(models.User).all()
+        results = []
+        
+        for user in users:
+            # Устанавливаем новый пароль
+            new_password = "admin123" if user.is_admin else "user123"
+            user.password = pwd_context.hash(new_password)
+            results.append({
+                "id": user.id,
+                "username": user.username,
+                "is_admin": user.is_admin,
+                "new_password": new_password
+            })
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Passwords reset successfully!",
+            "users": results
+        }
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "error": str(e)}
+    finally:
+        db.close()
 # Инициализация админа и пользователя при пустой БД
 @app.on_event("startup")
 def startup():
