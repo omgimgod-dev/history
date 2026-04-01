@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Place, User
-from ..templates_config import env  # ← импортируем окружение
+from ..templates_config import env
 
 router = APIRouter(tags=["home"])
 
