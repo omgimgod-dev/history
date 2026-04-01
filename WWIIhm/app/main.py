@@ -7,12 +7,15 @@ from . import models
 from .routers import auth, places, forum, tests, admin, home
 import os
 
+# Определяем базовую директорию
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 app.include_router(auth.router)
 app.include_router(places.router)
