@@ -28,9 +28,9 @@ async def home(request: Request, db: Session = Depends(get_db)):
         elif raw_image:
             main_map_image = str(raw_image)
     
-    # Рендерим шаблон вручную
+    # Рендерим шаблон асинхронно
     template = env.get_template("index.html")
-    content = template.render(
+    content = await template.render_async(  # ← используем render_async
         request=request,
         places=places,
         user=user,
@@ -42,5 +42,9 @@ async def home(request: Request, db: Session = Depends(get_db)):
 async def about(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     template = env.get_template("about.html")
-    content = template.render(request=request, user=user)
+    content = await template.render_async(  # ← используем render_async
+        request=request,
+        user=user
+    )
     return HTMLResponse(content=content)
+    
