@@ -6,8 +6,7 @@ from ..models import User
 from ..templates_config import env
 from passlib.context import CryptContext
 
-# ДОБАВЬТЕ ПРЕФИКС:
-router = APIRouter(prefix="/auth", tags=["auth"])  # ← изменено
+router = APIRouter(prefix="/auth", tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @router.get("/login", response_class=HTMLResponse)
@@ -27,7 +26,8 @@ async def login(
     """Обработка входа"""
     user = db.query(User).filter(User.username == username).first()
     
-    if not user or not pwd_context.verify(password, user.hashed_password):
+    # Используем поле password (не hashed_password)
+    if not user or not pwd_context.verify(password, user.password):
         template = env.get_template("login.html")
         content = await template.render_async(
             request=request,
@@ -66,11 +66,13 @@ async def register(
         )
         return HTMLResponse(content=content)
     
+    # Хешируем пароль и сохраняем в поле password
     hashed_password = pwd_context.hash(password)
     new_user = User(
         username=username,
         email=email,
-        hashed_password=hashed_password
+        password=hashed_password,  # ← сохраняем в поле password
+        is_admin=False
     )
     db.add(new_user)
     db.commit()
