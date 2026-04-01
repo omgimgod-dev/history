@@ -4,7 +4,9 @@ from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy.orm import Session
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./city_map.db"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATABASE_PATH = os.path.join(BASE_DIR, "city_map.db")
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
