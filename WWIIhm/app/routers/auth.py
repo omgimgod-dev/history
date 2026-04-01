@@ -5,6 +5,7 @@ from ..database import get_db
 from ..models import User
 from ..templates_config import env
 from passlib.context import CryptContext
+import hashlib
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -26,14 +27,34 @@ async def login(
     """Обработка входа"""
     user = db.query(User).filter(User.username == username).first()
     
-    # Используем поле password (не hashed_password)
-    if not user or not pwd_context.verify(password, user.password):
+    if not user:
         template = env.get_template("login.html")
         content = await template.render_async(
             request=request,
             error="Неверное имя пользователя или пароль"
         )
         return HTMLResponse(content=content)
+    
+    # Проверяем тип пароля в базе
+    if user.password.startswith('$2b$'):
+        # Это bcrypt хеш
+        if not pwd_context.verify(password, user.password):
+            template = env.get_template("login.html")
+            content = await template.render_async(
+                request=request,
+                error="Неверное имя пользователя или пароль"
+            )
+            return HTMLResponse(content=content)
+    else:
+        # Это SHA256 хеш (временное решение)
+        hashed = hashlib.sha256(password.encode()).hexdigest()
+        if user.password != hashed:
+            template = env.get_template("login.html")
+            content = await template.render_async(
+                request=request,
+                error="Неверное имя пользователя или пароль"
+            )
+            return HTMLResponse(content=content)
     
     request.session["user_id"] = user.id
     return RedirectResponse(url="/", status_code=303)
