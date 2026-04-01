@@ -46,93 +46,40 @@ os.makedirs("app/static/uploads", exist_ok=True)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ========== ВРЕМЕННЫЙ ЭНДПОИНТ ДЛЯ ФИКСА ПАРОЛЕЙ ==========
-@app.get("/fix-passwords")
-def fix_passwords():
-    """Временный эндпоинт для хеширования паролей"""
+@app.get("/reset-all")
+def reset_all_passwords():
+    """Простой сброс всех паролей без bcrypt"""
+    import hashlib
     db = SessionLocal()
     try:
-        users = db.query(models.User).all()
-        fixed_count = 0
-        results = []
+        # Удаляем всех пользователей
+        db.query(models.User).delete()
         
-        for user in users:
-            try:
-                # Если пароль не начинается с $2b$ (признак bcrypt хеша)
-                if not user.password.startswith('$2b$'):
-                    old_password = user.password
-                    # Обрезаем пароль до 72 байт (ограничение bcrypt)
-                    # Преобразуем в bytes, обрезаем, потом обратно в строку
-                    password_bytes = old_password.encode('utf-8')[:72]
-                    truncated_password = password_bytes.decode('utf-8', errors='ignore')
-                    
-                    print(f"Fixing password for user: {user.username}")
-                    print(f"  Original length: {len(old_password)} chars")
-                    print(f"  Truncated to: {len(truncated_password)} chars")
-                    
-                    user.password = pwd_context.hash(truncated_password)
-                    fixed_count += 1
-                    results.append({
-                        "id": user.id,
-                        "username": user.username,
-                        "status": "fixed",
-                        "old_length": len(old_password),
-                        "new_length": len(truncated_password)
-                    })
-                else:
-                    results.append({
-                        "id": user.id,
-                        "username": user.username,
-                        "status": "already_hashed"
-                    })
-            except Exception as e:
-                results.append({
-                    "id": user.id,
-                    "username": user.username,
-                    "status": "error",
-                    "error": str(e)
-                })
+        # Используем простой sha256 для временного решения
+        def simple_hash(password):
+            return hashlib.sha256(password.encode()).hexdigest()
         
+        # Создаем админа
+        admin = models.User(
+            username="admin",
+            password=simple_hash("admin123"),
+            is_admin=True
+        )
+        # Создаем обычного пользователя
+        user = models.User(
+            username="user",
+            password=simple_hash("user123"),
+            is_admin=False
+        )
+        
+        db.add_all([admin, user])
         db.commit()
         
         return {
             "success": True,
-            "fixed_count": fixed_count,
-            "total_users": len(users),
-            "results": results,
-            "message": f"Fixed {fixed_count} passwords"
-        }
-    except Exception as e:
-        db.rollback()
-        return {"success": False, "error": str(e)}
-    finally:
-        db.close()
-# =========================================================
-@app.get("/force-reset-passwords")
-def force_reset_passwords():
-    """Принудительный сброс паролей"""
-    db = SessionLocal()
-    try:
-        # Получаем всех пользователей
-        users = db.query(models.User).all()
-        results = []
-        
-        for user in users:
-            # Устанавливаем новый пароль
-            new_password = "admin123" if user.is_admin else "user123"
-            user.password = pwd_context.hash(new_password)
-            results.append({
-                "id": user.id,
-                "username": user.username,
-                "is_admin": user.is_admin,
-                "new_password": new_password
-            })
-        
-        db.commit()
-        
-        return {
-            "success": True,
-            "message": "Passwords reset successfully!",
-            "users": results
+            "message": "All users reset with SHA256!",
+            "admin": {"username": "admin", "password": "admin123"},
+            "user": {"username": "user", "password": "user123"}
         }
     except Exception as e:
         db.rollback()
