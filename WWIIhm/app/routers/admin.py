@@ -11,6 +11,9 @@ from pathlib import Path
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
+# Определяем базовую директорию проекта
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # WWIIhm/app -> WWIIhm
+
 async def admin_required(request: Request, db: Session = Depends(get_db)):
     """Проверка, является ли пользователь администратором"""
     user_id = request.session.get("user_id")
@@ -101,15 +104,15 @@ async def add_image_pair(
     if not modern or not past:
         return JSONResponse(status_code=400, content={"error": "Both modern and past images are required"})
 
-    # Создаём директорию для места, если её нет (полный путь от корня проекта)
-    base_upload_dir = "app/static/uploads/places"
-    place_dir = os.path.join(base_upload_dir, str(place_id))
-    os.makedirs(place_dir, exist_ok=True)
+    # Используем абсолютный путь
+    upload_dir = os.path.join(BASE_DIR, "app", "static", "uploads", "places", str(place_id))
+    print(f"DEBUG: Upload directory: {upload_dir}")
+    os.makedirs(upload_dir, exist_ok=True)
 
     # Создаём уникальную подпапку для пары
     timestamp = int(time.time())
     pair_folder = f"pair_{timestamp}"
-    pair_path = os.path.join(place_dir, pair_folder)
+    pair_path = os.path.join(upload_dir, pair_folder)
     os.makedirs(pair_path, exist_ok=True)
 
     # Сохраняем файлы
@@ -120,10 +123,19 @@ async def add_image_pair(
     modern_path = os.path.join(pair_path, modern_filename)
     past_path = os.path.join(pair_path, past_filename)
 
+    print(f"DEBUG: Saving modern to: {modern_path}")
     with open(modern_path, "wb") as buffer:
         shutil.copyfileobj(modern.file, buffer)
+    
+    print(f"DEBUG: Saving past to: {past_path}")
     with open(past_path, "wb") as buffer:
         shutil.copyfileobj(past.file, buffer)
+    
+    # Проверяем, что файлы созданы
+    if os.path.exists(modern_path):
+        print(f"DEBUG: Modern image saved, size: {os.path.getsize(modern_path)} bytes")
+    if os.path.exists(past_path):
+        print(f"DEBUG: Past image saved, size: {os.path.getsize(past_path)} bytes")
 
     # Определяем следующий индекс пары
     max_index = db.query(ImagePair).filter(ImagePair.place_id == place_id).count()
@@ -136,6 +148,7 @@ async def add_image_pair(
     db.add(new_pair)
     db.commit()
 
+    print(f"DEBUG: Image pair saved to DB")
     return RedirectResponse(url=f"/admin/edit_place/{place_id}", status_code=302)
 
 @router.post("/place/{place_id}/delete_pair/{pair_id}")
@@ -154,10 +167,12 @@ async def delete_image_pair(
         return RedirectResponse(url=f"/admin/edit_place/{place_id}", status_code=404)
 
     try:
-        # Правильный путь к папке
-        pair_dir = os.path.join("app/static/uploads/places", str(place_id), os.path.basename(os.path.dirname(pair.modern_path)))
+        # Используем абсолютный путь для удаления
+        pair_dir = os.path.join(BASE_DIR, "app", "static", "uploads", "places", str(place_id), 
+                                os.path.basename(os.path.dirname(pair.modern_path)))
         if os.path.exists(pair_dir):
             shutil.rmtree(pair_dir)
+            print(f"DEBUG: Deleted pair directory: {pair_dir}")
     except Exception as e:
         print(f"Error deleting pair directory: {e}")
 
@@ -180,13 +195,14 @@ async def upload_map(
     db.query(Place).delete()
     db.commit()
 
-    upload_dir = "app/static/uploads"
+    upload_dir = os.path.join(BASE_DIR, "app", "static", "uploads")
     os.makedirs(upload_dir, exist_ok=True)
     file_path = os.path.join(upload_dir, "city_map.jpg")
     if os.path.exists(file_path):
         os.remove(file_path)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(map_image.file, buffer)
+    print(f"DEBUG: Map uploaded to {file_path}")
     return RedirectResponse(url="/admin", status_code=302)
 
 @router.get("/add_place", response_class=HTMLResponse)
@@ -239,7 +255,7 @@ async def delete_place(
     if not place:
         return RedirectResponse(url="/admin", status_code=404)
     
-    place_dir = f"app/static/uploads/places/{place_id}"
+    place_dir = os.path.join(BASE_DIR, "app", "static", "uploads", "places", str(place_id))
     if os.path.exists(place_dir):
         shutil.rmtree(place_dir)
     db.delete(place)
