@@ -6,7 +6,8 @@ from ..models import User
 from ..templates_config import env
 from passlib.context import CryptContext
 
-router = APIRouter(tags=["auth"])
+# ДОБАВЬТЕ ПРЕФИКС:
+router = APIRouter(prefix="/auth", tags=["auth"])  # ← изменено
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 @router.get("/login", response_class=HTMLResponse)
