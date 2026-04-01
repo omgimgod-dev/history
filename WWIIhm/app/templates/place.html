@@ -8,16 +8,17 @@
         {% if place.image_pairs %}
             {% set first_pair = place.image_pairs[0] %}
 
+            <!-- ДОБАВЛЯЕМ АТРИБУТ data-orientation -->
             <div class="twentytwenty-container main-image" data-orientation="horizontal">
                 <img src="{{ first_pair.modern_path }}" alt="Сегодня">
                 <img src="{{ first_pair.past_path }}" alt="Прошлое">
             </div>
 
             {% if place.image_pairs|length > 1 %}
-            <div class="thumbnails" style="margin-top: 20px; display: flex; gap: 10px;">
+            <div class="thumbnails" style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                 {% for pair in place.image_pairs %}
                     <img src="{{ pair.modern_path }}" alt="Thumb" 
-                         style="width: 100px; height: 70px; object-fit: cover; cursor: pointer; border: 2px solid transparent;"
+                         style="width: 100px; height: 70px; object-fit: cover; cursor: pointer; border: 2px solid transparent; border-radius: 5px;"
                          onmouseover="this.style.borderColor='#007bff'"
                          onmouseout="this.style.borderColor='transparent'"
                          onclick="updateMainImage('{{ pair.modern_path }}', '{{ pair.past_path }}')">
@@ -58,13 +59,15 @@
     .place-description {
         margin: 20px 0;
         line-height: 1.6;
+        font-size: 1.1rem;
+    }
+    .thumbnails img {
+        transition: transform 0.2s, border-color 0.2s;
+    }
+    .thumbnails img:hover {
+        transform: scale(1.05);
     }
 </style>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="/static/js/jquery.event.move.js"></script>
-<script src="/static/js/jquery.twentytwenty.js"></script>
-<link rel="stylesheet" href="/static/css/twentytwenty.css">
 
 <script>
 // Функция для обновления обоих изображений в TwentyTwenty контейнере
@@ -81,52 +84,36 @@ function updateMainImage(modernSrc, pastSrc) {
         return;
     }
 
-    // Сохраняем текущий offset, если нужно
-    let currentOffset = 0.5;
-    if (container.twentytwenty && container.twentytwenty.getData) {
-        currentOffset = container.twentytwenty.getData('offset');
-    }
-
     // Обновляем источники изображений
     images[0].src = modernSrc;
     images[1].src = pastSrc;
 
     // Ждём загрузки изображений и переинициализируем
     Promise.all([
-        new Promise(resolve => { images[0].onload = resolve; images[0].onerror = resolve; }),
-        new Promise(resolve => { images[1].onload = resolve; images[1].onerror = resolve; })
+        new Promise(resolve => { 
+            if (images[0].complete) resolve();
+            else images[0].onload = resolve;
+        }),
+        new Promise(resolve => { 
+            if (images[1].complete) resolve();
+            else images[1].onload = resolve;
+        })
     ]).then(() => {
         if (typeof $ !== 'undefined' && $.fn.twentytwenty) {
             // Уничтожаем старую инициализацию
             $(container).trigger('destroy.twentytwenty');
-            // Инициализируем заново
+            // Инициализируем заново с теми же настройками
+            const orientation = container.getAttribute('data-orientation') || 'horizontal';
+            const offset = orientation === 'vertical' ? 0.3 : 0.7;
             $(container).twentytwenty({ 
-                default_offset_pct: currentOffset,
-                orientation: 'horizontal'
+                default_offset_pct: offset,
+                orientation: orientation
             });
         }
     });
 }
 
-// Инициализация TwentyTwenty после полной загрузки страницы
-document.addEventListener('DOMContentLoaded', function() {
-    // Ждем, пока jQuery и плагин загрузятся
-    function initTwentyTwenty() {
-        if (typeof $ !== 'undefined' && $.fn.twentytwenty && $('.twentytwenty-container').length) {
-            $(".twentytwenty-container").twentytwenty({
-                default_offset_pct: 0.5,
-                orientation: 'horizontal'
-            });
-        } else {
-            // Если еще не загрузились, ждем
-            setTimeout(initTwentyTwenty, 100);
-        }
-    }
-    
-    initTwentyTwenty();
-});
-
-// Дополнительная инициализация для случая, если изображения загружаются через updateMainImage
+// Убеждаемся, что функция доступна глобально
 window.updateMainImage = updateMainImage;
 </script>
 
