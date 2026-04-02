@@ -5,18 +5,17 @@
     
     <!-- Блок с изображениями -->
     <div class="place-images login">
-        {% if place.image_pairs %}
-            {% set first_pair = place.image_pairs[0] %}
+        {% if image_pairs and image_pairs|length > 0 %}
+            {% set first_pair = image_pairs[0] %}
 
-            <!-- ДОБАВЛЯЕМ АТРИБУТ data-orientation -->
             <div class="twentytwenty-container main-image" data-orientation="horizontal">
                 <img src="{{ first_pair.modern_path }}" alt="Сегодня">
                 <img src="{{ first_pair.past_path }}" alt="Прошлое">
             </div>
 
-            {% if place.image_pairs|length > 1 %}
+            {% if image_pairs|length > 1 %}
             <div class="thumbnails" style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                {% for pair in place.image_pairs %}
+                {% for pair in image_pairs %}
                     <img src="{{ pair.modern_path }}" alt="Thumb" 
                          style="width: 100px; height: 70px; object-fit: cover; cursor: pointer; border: 2px solid transparent; border-radius: 5px;"
                          onmouseover="this.style.borderColor='#007bff'"
@@ -100,9 +99,7 @@ function updateMainImage(modernSrc, pastSrc) {
         })
     ]).then(() => {
         if (typeof $ !== 'undefined' && $.fn.twentytwenty) {
-            // Уничтожаем старую инициализацию
             $(container).trigger('destroy.twentytwenty');
-            // Инициализируем заново с теми же настройками
             const orientation = container.getAttribute('data-orientation') || 'horizontal';
             const offset = orientation === 'vertical' ? 0.3 : 0.7;
             $(container).twentytwenty({ 
@@ -113,7 +110,6 @@ function updateMainImage(modernSrc, pastSrc) {
     });
 }
 
-// Убеждаемся, что функция доступна глобально
 window.updateMainImage = updateMainImage;
 </script>
 
