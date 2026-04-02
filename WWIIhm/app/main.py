@@ -1,4 +1,5 @@
 import os
+import hashlib
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
@@ -6,7 +7,6 @@ from .database import engine, SessionLocal
 from . import models
 from .routers import auth, places, forum, tests, admin, home
 from .templates_config import env
-from passlib.context import CryptContext
 
 # Определяем базовую директорию (WWIIhm/app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -49,37 +49,40 @@ async def db_session_middleware(request: Request, call_next):
     request.state.db.close()
     return response
 
-# Настройка хеширования паролей
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# --- Функция для SHA256 хеширования ---
+def hash_password(password: str) -> str:
+    """Возвращает SHA256 хеш пароля."""
+    return hashlib.sha256(password.encode()).hexdigest()
 
-# ВРЕМЕННЫЙ ЭНДПОИНТ ДЛЯ СБРОСА ПАРОЛЕЙ
+# --- Единый эндпоинт для сброса ВСЕХ пользователей и паролей ---
 @app.get("/reset-all")
-def reset_all_passwords():
-    import hashlib
+def reset_all_users():
+    """Полностью очищает таблицу пользователей и создает админа с user."""
     db = SessionLocal()
     try:
-        db.query(models.User).delete()
-        
-        def simple_hash(password):
-            return hashlib.sha256(password.encode()).hexdigest()
-        
+        # 1. Удаляем всех существующих пользователей
+        deleted_count = db.query(models.User).delete()
+        print(f"Deleted {deleted_count} existing users.")
+
+        # 2. Создаем админа с SHA256 паролем
         admin = models.User(
             username="admin",
-            password=simple_hash("admin123"),
+            password=hash_password("admin123"),
             is_admin=True
         )
+        # 3. Создаем обычного пользователя
         user = models.User(
             username="user",
-            password=simple_hash("user123"),
+            password=hash_password("user123"),
             is_admin=False
         )
-        
+
         db.add_all([admin, user])
         db.commit()
-        
+
         return {
             "success": True,
-            "message": "All users reset with SHA256!",
+            "message": "All users reset! Use SHA256 passwords.",
             "admin": {"username": "admin", "password": "admin123"},
             "user": {"username": "user", "password": "user123"}
         }
@@ -89,29 +92,32 @@ def reset_all_passwords():
     finally:
         db.close()
 
-# Инициализация админа и пользователя
+# --- Упрощенная инициализация БД при старте ---
 @app.on_event("startup")
 def startup():
+    """Проверяет, есть ли пользователи, и если нет — создает админа через SHA256."""
     db = SessionLocal()
     try:
         if db.query(models.User).count() == 0:
-            print("Creating admin and user...")
+            print("Creating initial admin and user with SHA256...")
             admin = models.User(
                 username="admin",
-                password=pwd_context.hash("admin123"),
+                password=hash_password("admin123"),
                 is_admin=True
             )
             user = models.User(
                 username="user",
-                password=pwd_context.hash("user123"),
+                password=hash_password("user123"),
                 is_admin=False
             )
             db.add_all([admin, user])
             db.commit()
-            print("✅ Admin and user created successfully!")
+            print("✅ Admin and user created successfully with SHA256!")
+            print("   Admin login: admin / admin123")
+            print("   User login: user / user123")
         else:
-            print("✅ Users already exist")
+            print("✅ Users already exist.")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Error during startup user check: {e}")
     finally:
         db.close()
