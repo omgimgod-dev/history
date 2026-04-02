@@ -4,13 +4,15 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
 from ..templates_config import env
-from passlib.context import CryptContext
 import hashlib
 import os
 import shutil
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    """Возвращает SHA256 хеш пароля."""
+    return hashlib.sha256(password.encode()).hexdigest()
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
@@ -26,9 +28,9 @@ async def login(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    """Обработка входа"""
+    """Обработка входа (только SHA256)."""
     user = db.query(User).filter(User.username == username).first()
-    
+
     if not user:
         template = env.get_template("login.html")
         content = await template.render_async(
@@ -36,28 +38,17 @@ async def login(
             error="Неверное имя пользователя или пароль"
         )
         return HTMLResponse(content=content)
-    
-    # Проверяем тип пароля в базе
-    if user.password.startswith('$2b$'):
-        # Это bcrypt хеш
-        if not pwd_context.verify(password, user.password):
-            template = env.get_template("login.html")
-            content = await template.render_async(
-                request=request,
-                error="Неверное имя пользователя или пароль"
-            )
-            return HTMLResponse(content=content)
-    else:
-        # Это SHA256 хеш (временное решение)
-        hashed = hashlib.sha256(password.encode()).hexdigest()
-        if user.password != hashed:
-            template = env.get_template("login.html")
-            content = await template.render_async(
-                request=request,
-                error="Неверное имя пользователя или пароль"
-            )
-            return HTMLResponse(content=content)
-    
+
+    # Проверяем пароль через SHA256
+    hashed_input_password = hash_password(password)
+    if user.password != hashed_input_password:
+        template = env.get_template("login.html")
+        content = await template.render_async(
+            request=request,
+            error="Неверное имя пользователя или пароль"
+        )
+        return HTMLResponse(content=content)
+
     request.session["user_id"] = user.id
     return RedirectResponse(url="/", status_code=303)
 
@@ -76,11 +67,11 @@ async def register(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    """Обработка регистрации"""
+    """Обработка регистрации (сохраняем SHA256 хеш)."""
     existing_user = db.query(User).filter(
         (User.username == username) | (User.email == email)
     ).first()
-    
+
     if existing_user:
         template = env.get_template("register.html")
         content = await template.render_async(
@@ -88,9 +79,9 @@ async def register(
             error="Пользователь с таким именем или email уже существует"
         )
         return HTMLResponse(content=content)
-    
-    # Хешируем пароль и сохраняем в поле password
-    hashed_password = pwd_context.hash(password)
+
+    # Сохраняем хеш пароля
+    hashed_password = hash_password(password)
     new_user = User(
         username=username,
         email=email,
@@ -100,7 +91,7 @@ async def register(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
+
     request.session["user_id"] = new_user.id
     return RedirectResponse(url="/", status_code=303)
 
@@ -200,7 +191,7 @@ async def change_password(
     confirm_password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    """Изменение пароля (JSON ответ для AJAX)"""
+    """Изменение пароля (JSON ответ для AJAX) - только SHA256"""
     user_id = request.session.get("user_id")
     if not user_id:
         return JSONResponse(
@@ -215,20 +206,12 @@ async def change_password(
             content={"success": False, "error": "Пользователь не найден"}
         )
     
-    # Проверяем старый пароль
-    if user.password.startswith('$2b$'):
-        # bcrypt хеш
-        if not pwd_context.verify(old_password, user.password):
-            return JSONResponse(
-                content={"success": False, "error": "Неверный старый пароль"}
-            )
-    else:
-        # SHA256 хеш (временное решение)
-        old_hashed = hashlib.sha256(old_password.encode()).hexdigest()
-        if user.password != old_hashed:
-            return JSONResponse(
-                content={"success": False, "error": "Неверный старый пароль"}
-            )
+    # Проверяем старый пароль через SHA256 (упрощенно)
+    old_hashed = hash_password(old_password)
+    if user.password != old_hashed:
+        return JSONResponse(
+            content={"success": False, "error": "Неверный старый пароль"}
+        )
     
     # Проверяем совпадение нового пароля
     if new_password != confirm_password:
@@ -242,8 +225,8 @@ async def change_password(
             content={"success": False, "error": "Новый пароль должен содержать минимум 6 символов"}
         )
     
-    # Сохраняем новый пароль (используем SHA256 для простоты)
-    new_hashed = hashlib.sha256(new_password.encode()).hexdigest()
+    # Сохраняем новый пароль (SHA256)
+    new_hashed = hash_password(new_password)
     user.password = new_hashed
     db.commit()
     
