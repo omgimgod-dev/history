@@ -34,13 +34,20 @@ async def place_detail(request: Request, place_id: int, db: Session = Depends(ge
     if not place:
         raise HTTPException(status_code=404, detail="Место не найдено")
     
+    # Явно загружаем image_pairs с сортировкой
     reviews = db.query(Review).filter(Review.place_id == place_id).all()
     user = get_current_user(request, db)
+    
+    # Принудительно загружаем image_pairs, чтобы они были доступны в шаблоне
+    # SQLAlchemy лениво загружает отношения, но в шаблоне они должны быть доступны
+    # Если не работают, можно сделать:
+    image_pairs = db.query(ImagePair).filter(ImagePair.place_id == place_id).order_by(ImagePair.pair_index).all()
     
     template = env.get_template("place.html")
     content = await template.render_async(
         request=request,
         place=place,
+        image_pairs=image_pairs,  # ← передаём отдельно
         reviews=reviews,
         user=user
     )
