@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import Place, Review, User
+from ..models import Place, Review, User, ImagePair
 from ..templates_config import env
 
 router = APIRouter(prefix="/places", tags=["places"])
